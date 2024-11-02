@@ -15,6 +15,10 @@ export class AddressService {
 
   async create(address: CreateAddressDto) {
 
+    if(!address.idUser) {
+      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${AddressSide['user']} não pode ser vazio!`);
+    }
+
     const user = await this.prismaService.user.findUnique({
       where: { idUser: address.idUser }
     })
@@ -23,7 +27,82 @@ export class AddressService {
       throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['user']} não está cadastrado no sistema!`);
     }
     
-    return address;
+    if(!address.cep) {
+      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${AddressSide['cep']} não pode ser vazio!`);
+    }
+
+    if(!address.state) {
+      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${AddressSide['state']} não pode ser vazio!`);
+    }
+
+    if(!address.city) {
+      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${AddressSide['city']} não pode ser vazio!`);
+    }
+
+    if(!address.district) {
+      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${AddressSide['district']} não pode ser vazio!`);
+    }
+
+    if(!address.road) {
+      throw new ErrorExceptionFilters('BAD_REQUEST', `A ${AddressSide['road']} não pode ser vazia!`);
+    }
+
+    if(!address.number) {
+      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${AddressSide['number']} não pode ser vazio!`);
+    }
+
+    return await this.prismaService.address.create({
+      data: {
+        cep: address.cep,
+        state: address.state,
+        city: address.city,
+        district: address.district,
+        road: address.road,
+        number: address.number,
+        complement: address.complement,
+        user: {
+          connect: {
+            idUser: address.idUser
+          }
+        }
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            surname: true,
+            cpf: true,
+            email: true,
+            role: true,
+            isActive: true
+          }
+        }, 
+      }
+    })
+    .then(address => {
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço cadastrado com sucesso!' };
+      return {
+        data: {
+          cep: address.cep,
+          state: address.state,
+          city: address.city,
+          district: address.district,
+          road: address.road,
+          number: address.number,
+          complement: address.complement,
+          user: address.user
+        },
+        message,
+        statusCode: HttpStatus.CREATED
+      }
+    })
+    .catch(() => {
+      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao cadastrar endereço!' };
+        throw new ErrorExceptionFilters('BAD_REQUEST', {
+          message,
+          statusCode: HttpStatus.BAD_REQUEST,
+        })
+    });
   }
 
   async findAddressByCep(cep: string) {

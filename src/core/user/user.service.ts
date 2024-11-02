@@ -36,7 +36,7 @@ export class UserService {
             phone: user.phone,
             email: user.email,
             role: user.role,
-            status: user.status
+            isActive: user.isActive
           },
           message,
           statusCode: HttpStatus.CREATED
