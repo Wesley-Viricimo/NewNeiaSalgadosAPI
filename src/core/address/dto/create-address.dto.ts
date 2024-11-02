@@ -6,5 +6,5 @@ export class CreateAddressDto {
     road: string
     number: string
     complement: string
-    idUser: string
+    idUser: number
 }

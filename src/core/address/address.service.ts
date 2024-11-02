@@ -4,6 +4,7 @@ import { UpdateAddressDto } from './dto/update-address.dto';
 import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
 import { ViaCepService } from 'src/shared/utils/Api/viacep.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { AddressSide } from './entities/address.entity';
 
 @Injectable()
 export class AddressService {
@@ -15,11 +16,11 @@ export class AddressService {
   async create(address: CreateAddressDto) {
 
     const user = await this.prismaService.user.findUnique({
-      where: { idUser: Number(address.idUser) }
+      where: { idUser: address.idUser }
     })
 
     if (!user) {
-      //throw new ErrorExceptionFilters('BAD_REQUEST', `A ${ProductSide['description']} é obrigatória!`);
+      throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['user']} não está cadastrado no sistema!`);
     }
     
     return address;
