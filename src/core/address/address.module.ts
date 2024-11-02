@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { AddressService } from './address.service';
 import { AddressController } from './address.controller';
 import { ViaCepService } from 'src/shared/utils/Api/viacep.service';
+import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
+import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
 
 @Module({
@@ -9,7 +11,9 @@ import { HttpModule } from '@nestjs/axios';
   controllers: [AddressController],
   providers: [
     AddressService,
-    ViaCepService
+    ViaCepService,
+    ErrorExceptionFilters,
+    PrismaService
   ],
 })
 export class AddressModule {}

@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpStatus } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
@@ -42,8 +42,7 @@ export class UserService {
           statusCode: HttpStatus.CREATED
         };
       })
-      .catch((err) => {
-        console.log(err);
+      .catch(() => {
         const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao cadastrar usuário!' };
         throw new ErrorExceptionFilters('BAD_REQUEST', {
           message,

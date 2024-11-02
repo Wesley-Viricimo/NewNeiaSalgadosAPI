@@ -12,9 +12,9 @@ export class AddressController {
     return this.addressService.create(address);
   }
 
-  @Get()
-  findAll() {
-    return this.addressService.findAll();
+  @Get('consultacep/:cep')
+  findAddressByCep(@Param('cep') cep: string) {
+    return this.addressService.findAddressByCep(cep);
   }
 
   @Get(':id')
