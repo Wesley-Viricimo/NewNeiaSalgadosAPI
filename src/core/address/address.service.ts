@@ -26,6 +26,21 @@ export class AddressService {
     if (!user) {
       throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['user']} não está cadastrado no sistema!`);
     }
+
+    const addressExists = await this.prismaService.address.findFirst({
+      where: {
+        idUser: address.idUser,
+        cep: address.cep,
+        state: address.state,
+        district: address.district,
+        road: address.road,
+        number: address.number
+      }
+    });
+
+    if(addressExists) {
+      throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${AddressSide['address']} endereço já foi cadastrado no sistema!`);
+    }
     
     if(!address.cep) {
       throw new ErrorExceptionFilters('BAD_REQUEST', `O ${AddressSide['cep']} não pode ser vazio!`);

@@ -15,7 +15,7 @@ model User {
   name      String 
   surname   String
   cpf       String          @unique() @db.VarChar(11)
-  phone     String          @unique()
+  phone     String
   email     String          @unique()
   role      String          @default("CLIENTE")
   isActive  Boolean         @default(true)

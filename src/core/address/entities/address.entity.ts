@@ -13,6 +13,7 @@ export class Address {
 }
 
 export const AddressSide = {
+    address: "endereço",
     cep: "CEP",
     state: "estado",
     city: "cidade",
