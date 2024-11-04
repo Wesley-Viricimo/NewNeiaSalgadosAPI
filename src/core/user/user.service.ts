@@ -4,6 +4,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { UserSide } from './entities/user.entity';
+import { cpf } from 'cpf-cnpj-validator';
 import { hash } from 'bcryptjs';
 
 @Injectable()
@@ -37,6 +38,10 @@ export class UserService {
 
     if(!user.password) {
       throw new ErrorExceptionFilters('BAD_REQUEST', `O ${UserSide['password']} deve ser fornecido!`);
+    }
+
+    if(!cpf.isValid(user.cpf)) {
+      throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} não é válido!`);
     }
 
     const emailExists = await this.prismaService.user.findFirst({
