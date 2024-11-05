@@ -1,10 +1,13 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
+import { PaginatorTypes, paginator } from '@nodeteam/nestjs-prisma-pagination';
 import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
 import { ViaCepService } from 'src/shared/utils/Api/viacep.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { AddressSide } from './entities/address.entity';
+import { Address, Prisma } from '@prisma/client';
+import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
 
 @Injectable()
 export class AddressService {
@@ -88,9 +91,71 @@ export class AddressService {
     });
   }
 
+  async findById(addressId: number, userId: number) {
+
+    const selectedFields = {
+      cep: true,
+      state: true,
+      city: true,
+      district: true,
+      road: true,
+      number: true,
+      complement: true,
+      idUser: true,
+      user: {
+        select: { 
+          name: true,
+          surname: true,
+          cpf: true,
+          email: true,
+          role: true,
+        },
+      },
+    };
+
+    const address = await this.prismaService.address.findUnique({
+      where: { idAddress: addressId },
+      select: selectedFields
+    });
+
+    if(!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['address']} não foi encontrado!`);
+
+    if(address.idUser !== userId) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${AddressSide['address']} não pertence a este usuário!`);
+
+    const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço listado com sucesso!' };
+
+    return {
+      data: {
+        cep: address.cep,
+        state: address.state,
+        city: address.city,
+        district: address.district,
+        road: address.road,
+        number: address.number,
+        complement: address.complement,
+        user: address.user
+      },
+      message,
+      statusCode: HttpStatus.OK
+    };
+  }
+
   async findAddressByCep(cep: string) {
     try {
-      return await this.viaCepService.fetch(cep);
+      const data = await this.viaCepService.fetch(cep);
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Busca por CEP realizada com sucesso!' };
+      return {
+        data: {
+          cep: data.cep,
+          state: data.estado,
+          city: data.localidade,
+          district: data.bairro,
+          road: data.logradouro,
+          ddd: data.ddd
+        },
+        message,
+        statusCode: HttpStatus.OK
+      }
     } catch (error) {
       const message = { severity: 'error', summary: 'Erro', detail: 'CEP informado não foi encontrado!' };
         throw new ErrorExceptionFilters('NOT_FOUND', {
@@ -100,12 +165,44 @@ export class AddressService {
     } 
   }
 
-  findAll() {
-    return `This action returns all address`;
-  }
+  async findAddressesByUserId(userId: number, page: number, perPage: number) : Promise<PaginatedOutputDto<Object>>{
+    
+    const paginate: PaginatorTypes.PaginateFunction = paginator({ perPage });
 
-  findOne(id: number) {
-    return `This action returns a #${id} address`;
+    const selectedFields = {
+      cep: true,
+      state: true,
+      city: true,
+      district: true,
+      road: true,
+      number: true,
+      complement: true
+    };
+
+    return await paginate<Address, Prisma.AddressFindManyArgs>(
+      this.prismaService.address,
+      { 
+        where: { idUser: userId }, 
+        select: selectedFields
+      },
+      { page: page, perPage: perPage }
+    )
+    .then(response => {
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereços listados com sucesso.' };
+        return {
+          data: response.data,
+          meta: response.meta,
+          message,
+          statusCode: HttpStatus.OK
+        }
+    })
+    .catch(() => {
+      const message = { severity: 'error', summary: 'Erro ao listar endereços', detail: 'Erro' };
+        throw new ErrorExceptionFilters('BAD_REQUEST', {
+          message,
+          statusCode: HttpStatus.BAD_REQUEST,
+        })
+    });
   }
 
   async update(id: number, updateAddressDto: UpdateAddressDto, userId: number) {

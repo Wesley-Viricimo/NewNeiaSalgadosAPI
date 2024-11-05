@@ -1,16 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, HttpCode, HttpStatus } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
+import { Public } from 'src/shared/decorators/publicRoute.decorator';
 
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
+  //@Roles('ADMIN')
+  @Public()
+  @HttpCode(HttpStatus.CREATED)
   @Post()
   @UseInterceptors(FileInterceptor('imagem-produto'))
-  create(@Body() createProductDto: CreateProductDto,@UploadedFile() file: Express.Multer.File) {
+  create(@Body() createProductDto: CreateProductDto, @UploadedFile() file: Express.Multer.File) {
     return this.productService.create(createProductDto, file);
   }
 

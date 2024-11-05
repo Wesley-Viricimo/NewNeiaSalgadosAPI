@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { ProductModule } from './core/product/product.module';
 import { UserModule } from './core/user/user.module';
 import { AddressModule } from './core/address/address.module';
+import { OrderModule } from './core/order/order.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './shared/guards/auth.guard';
 import { PrismaService } from './shared/prisma/prisma.service';
@@ -14,7 +15,8 @@ import { PrismaService } from './shared/prisma/prisma.service';
     AuthModule, 
     ProductModule,
     UserModule,
-    AddressModule
+    AddressModule,
+    OrderModule
   ],
   controllers: [AppController],
   providers: [

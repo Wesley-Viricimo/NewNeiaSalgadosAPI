@@ -14,19 +14,12 @@ export class ProductService {
   ) {}
 
   async create(createProductDto: CreateProductDto, file: Express.Multer.File) {
-    if (!createProductDto.description) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `A ${ProductSide['description']} é obrigatória!`);
-    }
 
-    if(!createProductDto.price) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${ProductSide['price']} é obrigatório!`);
-    }
+    if(file) 
+      if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg')) throw new ErrorExceptionFilters('UNSUPPORTED_MEDIA_TYPE', `A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
 
-    if(file) {
-      if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg')) {
-        throw new ErrorExceptionFilters('UNSUPPORTED_MEDIA_TYPE', `A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
-      }
-    }
+
+    if(isNaN(Number(createProductDto.price))) throw new ErrorExceptionFilters('BAD_REQUEST', `O preço do produto deve ser um valor numérico!`);
 
     const existsProduct = await this.prismaService.product.findUnique({
       where: { description: createProductDto.description }
@@ -44,7 +37,7 @@ export class ProductService {
       data: {
         description: createProductDto.description,
         price: Number(createProductDto.price),
-        urlImage: file? file.originalname : ''
+        urlImage: file? file.originalname : null
       }
     })
     .then(result => {
