@@ -23,8 +23,12 @@ export class AddressController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAddressDto: UpdateAddressDto) {
-    return this.addressService.update(+id, updateAddressDto);
+  update(
+    @Param('id') id: string, 
+    @Body() updateAddressDto: UpdateAddressDto,
+    @Req() request: Request
+  ) {
+    return this.addressService.update(+id, updateAddressDto, request['userId']);
   }
 
   @Delete(':id')

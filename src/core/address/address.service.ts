@@ -19,9 +19,7 @@ export class AddressService {
       where: { idUser: userId }
     })
 
-    if (!user) {
-      throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['user']} não está cadastrado no sistema!`);
-    }
+    if (!user) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['user']} não está cadastrado no sistema!`);
 
     const addressExists = await this.prismaService.address.findFirst({
       where: {
@@ -34,9 +32,7 @@ export class AddressService {
       }
     });
 
-    if(addressExists) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${AddressSide['address']} endereço já foi cadastrado no sistema!`);
-    }
+    if(addressExists) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${AddressSide['address']} endereço já foi cadastrado no sistema!`);
     
     return await this.prismaService.address.create({
       data: {
@@ -112,8 +108,64 @@ export class AddressService {
     return `This action returns a #${id} address`;
   }
 
-  update(id: number, updateAddressDto: UpdateAddressDto) {
-    return `This action updates a #${id} address`;
+  async update(id: number, updateAddressDto: UpdateAddressDto, userId: number) {
+
+    const address = await this.prismaService.address.findUnique({
+      where: { idAddress: id }
+    });
+
+    if(!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['address']} não foi encontrado!`);
+
+    if(address.idUser !== userId) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${AddressSide['address']} não pertence a este usuário!`);
+
+    return await this.prismaService.address.update({
+      where: { idAddress: id },
+      data: {
+        cep: updateAddressDto.cep,
+        state: updateAddressDto.state,
+        city: updateAddressDto.city,
+        district: updateAddressDto.district,
+        road: updateAddressDto.road,
+        number: updateAddressDto.number,
+        complement: updateAddressDto.complement,
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            surname: true,
+            cpf: true,
+            email: true,
+            role: true,
+            isActive: true
+          }
+        }, 
+      }
+    })
+    .then(address => {
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço cadastrado com sucesso!' };
+      return {
+        data: {
+          cep: address.cep,
+          state: address.state,
+          city: address.city,
+          district: address.district,
+          road: address.road,
+          number: address.number,
+          complement: address.complement,
+          user: address.user
+        },
+        message,
+        statusCode: HttpStatus.CREATED
+      }
+    })
+    .catch(() => {
+      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao cadastrar endereço!' };
+        throw new ErrorExceptionFilters('BAD_REQUEST', {
+          message,
+          statusCode: HttpStatus.BAD_REQUEST,
+        })
+    });
   }
 
   remove(id: number) {
