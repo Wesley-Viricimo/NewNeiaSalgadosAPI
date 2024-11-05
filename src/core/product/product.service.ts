@@ -15,23 +15,7 @@ export class ProductService {
 
   async create(createProductDto: CreateProductDto, file: Express.Multer.File) {
 
-    if(file) 
-      if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg')) throw new ErrorExceptionFilters('UNSUPPORTED_MEDIA_TYPE', `A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
-
-
-    if(isNaN(Number(createProductDto.price))) throw new ErrorExceptionFilters('BAD_REQUEST', `O preço do produto deve ser um valor numérico!`);
-
-    const existsProduct = await this.prismaService.product.findUnique({
-      where: { description: createProductDto.description }
-    });
-
-    if(existsProduct) {
-      const message = { severity: 'error', summary: 'Erro', detail: 'Produto já cadastrado!' };
-      return {
-        message,
-        statusCode: HttpStatus.BAD_REQUEST,
-      }
-    }
+    await this.validateFieldsProduct(createProductDto, file);
     
     return await this.prismaService.product.create({
       data: {
@@ -56,6 +40,25 @@ export class ProductService {
         statusCode: HttpStatus.BAD_REQUEST,
       })
     });
+  }
+
+  private async validateFieldsProduct(createProductDto: CreateProductDto, file: Express.Multer.File) {
+    if(file) 
+      if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg')) throw new ErrorExceptionFilters('UNSUPPORTED_MEDIA_TYPE', `A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
+
+    if(isNaN(Number(createProductDto.price))) throw new ErrorExceptionFilters('BAD_REQUEST', `O preço do produto deve ser um valor numérico!`);
+
+    const existsProduct = await this.prismaService.product.findUnique({
+      where: { description: createProductDto.description }
+    });
+
+    if(existsProduct) {
+      const message = { severity: 'error', summary: 'Erro', detail: 'Produto já cadastrado!' };
+      return {
+        message,
+        statusCode: HttpStatus.BAD_REQUEST,
+      }
+    }
   }
 
   findAll() {

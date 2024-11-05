@@ -18,24 +18,7 @@ export class AddressService {
 
   async create(address: CreateAddressDto, userId: number) {
 
-    const user = await this.prismaService.user.findUnique({
-      where: { idUser: userId }
-    })
-
-    if (!user) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['user']} não está cadastrado no sistema!`);
-
-    const addressExists = await this.prismaService.address.findFirst({
-      where: {
-        idUser: userId,
-        cep: address.cep,
-        state: address.state,
-        district: address.district,
-        road: address.road,
-        number: address.number
-      }
-    });
-
-    if(addressExists) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${AddressSide['address']} endereço já foi cadastrado no sistema!`);
+    await this.validationFieldsAddress(address, userId);
     
     return await this.prismaService.address.create({
       data: {
@@ -163,6 +146,28 @@ export class AddressService {
           statusCode: HttpStatus.NOT_FOUND,
         });
     } 
+  }
+
+  private async validationFieldsAddress(address: CreateAddressDto, userId: number) {
+    const user = await this.prismaService.user.findUnique({
+      where: { idUser: userId }
+    })
+
+    if (!user) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['user']} não está cadastrado no sistema!`);
+
+    const addressExists = await this.prismaService.address.findFirst({
+      where: {
+        idUser: userId,
+        cep: address.cep,
+        state: address.state,
+        district: address.district,
+        road: address.road,
+        number: address.number
+      }
+    });
+
+    if(addressExists) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${AddressSide['address']} endereço já foi cadastrado no sistema!`);
+
   }
 
   async findAddressesByUserId(userId: number, page: number, perPage: number) : Promise<PaginatedOutputDto<Object>>{

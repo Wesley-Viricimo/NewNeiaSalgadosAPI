@@ -16,11 +16,7 @@ export class UserService {
   
   async create(user: CreateUserDto) {
 
-    this.verifyCpfIsValid(user.cpf);
-
-    await this.verifyEmailExists(user.email);
-
-    await this.verifyCpfExists(user.cpf);
+    await this.validateFieldsUser(user);
     
       const passwordHash = await hash(user.password, 8);
 
@@ -60,18 +56,14 @@ export class UserService {
       });
   }
 
-  verifyCpfIsValid(userCpf: string) {
-    if(!cpf.isValid(userCpf)) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} não é válido!`);
-    }
-  }
+  private async validateFieldsUser(user: CreateUserDto) {
+    if(!cpf.isValid(user.cpf)) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} não é válido!`);
 
-  async verifyEmailExists(email: string) {
-    const emailExists = await this.findUserByEmail(email);
-      
-    if(emailExists) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['email']} já está cadastrado no sistema!`);
-    }
+    const cpfExists = await this.findUserByCpf(user.cpf);
+    if(cpfExists) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} já está cadastrado no sistema!`);
+
+    const emailExists = await this.findUserByEmail(user.email);
+    if(emailExists) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['email']} já está cadastrado no sistema!`);
   }
 
   async findUserByEmail(email: string) {
@@ -80,15 +72,6 @@ export class UserService {
     });
 
     return user;
-  }
-
-  async verifyCpfExists(cpf: string) {
-    const cpfExists = await this.findUserByCpf(cpf);
-    
-    if(cpfExists) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} já está cadastrado no sistema!`);
-    }
-    
   }
 
   async findUserByCpf(cpf: string) {

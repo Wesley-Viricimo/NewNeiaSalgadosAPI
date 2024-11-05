@@ -24,10 +24,8 @@ export class AuthService {
       const { email, password } = auth;
       const user = await this.userService.findUserByEmail(email);
 
-      if(!user) {
-        this.autenticationFailedResponse();
-      }
-
+      if(!user) this.autenticationFailedResponse();
+      
       const compareHash = await compare(password, user.password);
 
       if(user && compareHash) {

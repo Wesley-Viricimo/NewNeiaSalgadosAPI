@@ -12,7 +12,8 @@ export class OrderService {
   ){}
 
   async create(createOrderDto: CreateOrderDto, userId: number) {
-    await this.validationsOrder(createOrderDto, userId);
+    
+    await this.validationFieldsOrder(createOrderDto, userId);
     
      const orderItemsData = createOrderDto.orderItens.map((item) => ({
       idProduct: item.product.idProduct,
@@ -100,7 +101,7 @@ export class OrderService {
      });
   }
 
-  private async validationsOrder(createOrderDto: CreateOrderDto, userId: number) {
+  private async validationFieldsOrder(createOrderDto: CreateOrderDto, userId: number) {
     if(!TYPE_OF_DELIVERY[createOrderDto.typeOfDelivery]) throw new ErrorExceptionFilters('BAD_REQUEST', `Tipo de entrega: ${createOrderDto.typeOfDelivery} inválido!`);
 
     if(!PAYMENT_METHOD[createOrderDto.paymentMethod]) throw new ErrorExceptionFilters('BAD_REQUEST', `Forma de pagamento: ${createOrderDto.paymentMethod} inválida!`);
