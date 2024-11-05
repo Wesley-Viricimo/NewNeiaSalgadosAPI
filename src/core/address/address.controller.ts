@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, HttpCode } from '@nestjs/common';
 import { AddressService } from './address.service';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
@@ -8,6 +8,7 @@ export class AddressController {
   constructor(private readonly addressService: AddressService) {}
 
   @Post()
+  @HttpCode(201)
   create(@Body() address: CreateAddressDto, @Req() request: Request) {
     return this.addressService.create(address, request['userId']);
   }
@@ -23,6 +24,7 @@ export class AddressController {
   }
 
   @Patch(':id')
+  @HttpCode(201)
   update(
     @Param('id') id: string, 
     @Body() updateAddressDto: UpdateAddressDto,
@@ -32,7 +34,8 @@ export class AddressController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.addressService.remove(+id);
+  @HttpCode(204)
+  delete(@Param('id') id: string, @Req() request: Request) {
+    return this.addressService.delete(+id, request['userId']);
   }
 }

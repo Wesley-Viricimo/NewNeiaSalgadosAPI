@@ -143,7 +143,7 @@ export class AddressService {
       }
     })
     .then(address => {
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço cadastrado com sucesso!' };
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço atualizado com sucesso!' };
       return {
         data: {
           cep: address.cep,
@@ -160,15 +160,34 @@ export class AddressService {
       }
     })
     .catch(() => {
-      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao cadastrar endereço!' };
+      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao atualizar endereço!' };
         throw new ErrorExceptionFilters('BAD_REQUEST', {
           message,
-          statusCode: HttpStatus.BAD_REQUEST,
+          statusCode: HttpStatus.BAD_REQUEST
         })
     });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} address`;
+  async delete(id: number, userId: number) {
+    
+    const address = await this.prismaService.address.findUnique({
+      where: { idAddress: id }
+    });
+  
+    if (!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['address']} não foi encontrado!`);
+  
+    if (address.idUser !== userId) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${AddressSide['address']} não pertence a este usuário!`);
+  
+    return await this.prismaService.address.delete({
+      where: { idAddress: id }
+    })
+    .catch(() => {
+      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao excluir endereço!' };
+      throw new ErrorExceptionFilters('BAD_REQUEST', {
+        message,
+        statusCode: HttpStatus.BAD_REQUEST
+      });
+    });
   }
+
 }
