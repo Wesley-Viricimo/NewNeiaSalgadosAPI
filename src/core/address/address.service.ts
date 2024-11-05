@@ -38,30 +38,6 @@ export class AddressService {
       throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${AddressSide['address']} endereço já foi cadastrado no sistema!`);
     }
     
-    if(!address.cep) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${AddressSide['cep']} não pode ser vazio!`);
-    }
-
-    if(!address.state) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${AddressSide['state']} não pode ser vazio!`);
-    }
-
-    if(!address.city) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${AddressSide['city']} não pode ser vazio!`);
-    }
-
-    if(!address.district) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${AddressSide['district']} não pode ser vazio!`);
-    }
-
-    if(!address.road) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `A ${AddressSide['road']} não pode ser vazia!`);
-    }
-
-    if(!address.number) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${AddressSide['number']} não pode ser vazio!`);
-    }
-
     return await this.prismaService.address.create({
       data: {
         cep: address.cep,
