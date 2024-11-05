@@ -1,15 +1,65 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpStatus } from '@nestjs/common';
 import { AuthDto } from './dto/AuthDto';
+import { UserService } from 'src/core/user/user.service';
+import { compare } from 'bcryptjs';
+import { TokenService } from './token/token.service';
 import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
-import { PrismaService } from 'src/shared/prisma/prisma.service';
+
+interface TokenAuthPayload{
+  idUser: number,
+  email: string,
+  isActive: boolean,
+  role: string
+}
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prismaService: PrismaService
+    private readonly userService: UserService,
+    private readonly tokenService: TokenService<TokenAuthPayload>
   ){}
 
-  auth(auth: AuthDto) {
-    return 'This action adds a new auth';
+  async auth(auth: AuthDto) {
+    try {
+      const { email, password } = auth;
+      const user = await this.userService.findUserByEmail(email);
+
+      if(!user) {
+        this.autenticationFailedResponse();
+      }
+
+      const compareHash = await compare(password, user.password);
+
+      if(user && compareHash) {
+        const payload = this.createPayload(user);
+        
+        return { 
+          token: await this.tokenService.createToken(payload), 
+          status: HttpStatus.CREATED
+        };
+      } else {
+        this.autenticationFailedResponse();
+      }
+
+    } catch (err) {
+      this.autenticationFailedResponse();
+    }
+  }
+
+  private createPayload(user: any): TokenAuthPayload {
+    return {
+      idUser: user.idUser,
+      email: user.email,
+      isActive: user.isActive,
+      role: user.role
+    }
+  }
+
+  private autenticationFailedResponse() {
+    const message = { severity: 'error', summary: 'Erro', detail: 'Nome de usuário ou senha incorretos. Verifique e tente novamente.' };
+      throw new ErrorExceptionFilters('UNAUTHORIZED', {
+        message,
+        statusCode: HttpStatus.UNAUTHORIZED,
+      });
   }
 }

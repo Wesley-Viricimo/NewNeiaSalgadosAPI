@@ -13,14 +13,10 @@ export class AddressService {
     private readonly prismaService: PrismaService
 ){}
 
-  async create(address: CreateAddressDto) {
-
-    if(!address.idUser) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${AddressSide['user']} não pode ser vazio!`);
-    }
+  async create(address: CreateAddressDto, userId: number) {
 
     const user = await this.prismaService.user.findUnique({
-      where: { idUser: address.idUser }
+      where: { idUser: userId }
     })
 
     if (!user) {
@@ -29,7 +25,7 @@ export class AddressService {
 
     const addressExists = await this.prismaService.address.findFirst({
       where: {
-        idUser: address.idUser,
+        idUser: userId,
         cep: address.cep,
         state: address.state,
         district: address.district,
@@ -77,7 +73,7 @@ export class AddressService {
         complement: address.complement,
         user: {
           connect: {
-            idUser: address.idUser
+            idUser: userId
           }
         }
       },

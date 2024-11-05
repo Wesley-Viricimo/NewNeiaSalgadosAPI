@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   HttpException,
   InternalServerErrorException,
   NotFoundException,
@@ -8,6 +9,7 @@ import {
   UnauthorizedException,
   UnsupportedMediaTypeException
 } from '@nestjs/common';
+import { FORBIDDEN_MESSAGE } from '@nestjs/core/guards';
 
 const createErrorFunction = (
   ExceptionClass: new (message?: string) => HttpException,
@@ -24,7 +26,8 @@ const _errors = {
   CONFLICT: createErrorFunction(ConflictException),
   PAYLOAD_TOO_LARGE: createErrorFunction(PayloadTooLargeException),
   INTERNAL_SERVER_ERROR: createErrorFunction(InternalServerErrorException),
-  UNSUPPORTED_MEDIA_TYPE: createErrorFunction(UnsupportedMediaTypeException)
+  UNSUPPORTED_MEDIA_TYPE: createErrorFunction(UnsupportedMediaTypeException),
+  FORBIDDEN: createErrorFunction(ForbiddenException)
 };
 
 type DefinedErrors = keyof typeof _errors;

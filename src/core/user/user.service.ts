@@ -16,49 +16,11 @@ export class UserService {
   
   async create(user: CreateUserDto) {
 
-    if(!user.name) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${UserSide['name']} não pode ser vazio!`);
-    }
+    this.verifyCpfIsValid(user.cpf);
 
-    if(!user.surname) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${UserSide['surname']} não pode ser vazio!`);
-    }
+    await this.verifyEmailExists(user.email);
 
-    if(!user.cpf) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${UserSide['cpf']} não pode ser vazio!`);
-    }
-
-    if(!user.phone) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${UserSide['phone']} não pode ser vazio!`);
-    }
-
-    if(!user.email) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${UserSide['email']} não pode ser vazio!`);
-    }
-
-    if(!user.password) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O ${UserSide['password']} deve ser fornecido!`);
-    }
-
-    if(!cpf.isValid(user.cpf)) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} não é válido!`);
-    }
-
-    const emailExists = await this.prismaService.user.findFirst({
-      where: { email: user.email }
-    });
-
-    if (emailExists) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['email']} já está cadastrado no sistema!`);
-    }
-
-    const cpfExists = await this.prismaService.user.findFirst({
-      where: { cpf: user.cpf }
-    });
-
-    if (cpfExists) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} já está cadastrado no sistema!`);
-    }
+    await this.verifyCpfExists(user.cpf);
     
       const passwordHash = await hash(user.password, 8);
 
@@ -96,6 +58,45 @@ export class UserService {
           statusCode: HttpStatus.BAD_REQUEST,
         })
       });
+  }
+
+  verifyCpfIsValid(userCpf: string) {
+    if(!cpf.isValid(userCpf)) {
+      throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} não é válido!`);
+    }
+  }
+
+  async verifyEmailExists(email: string) {
+    const emailExists = await this.findUserByEmail(email);
+      
+    if(emailExists) {
+      throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['email']} já está cadastrado no sistema!`);
+    }
+  }
+
+  async findUserByEmail(email: string) {
+    const user = await this.prismaService.user.findUnique({
+      where: { email: email }
+    });
+
+    return user;
+  }
+
+  async verifyCpfExists(cpf: string) {
+    const cpfExists = await this.findUserByCpf(cpf);
+    
+    if(cpfExists) {
+      throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} já está cadastrado no sistema!`);
+    }
+    
+  }
+
+  async findUserByCpf(cpf: string) {
+    const user = await this.prismaService.user.findUnique({
+      where: { cpf: cpf }
+    });
+
+    return user;
   }
 
   findAll() {

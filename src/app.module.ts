@@ -5,6 +5,9 @@ import { AuthModule } from './auth/auth.module';
 import { ProductModule } from './core/product/product.module';
 import { UserModule } from './core/user/user.module';
 import { AddressModule } from './core/address/address.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthGuard } from './shared/guards/auth.guard';
+import { PrismaService } from './shared/prisma/prisma.service';
 
 @Module({
   imports: [
@@ -14,6 +17,13 @@ import { AddressModule } from './core/address/address.module';
     AddressModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    PrismaService,
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard
+    }
+  ],
 })
 export class AppModule {}

@@ -1,4 +1,9 @@
+import { IsNotEmpty } from 'class-validator';
+
 export class AuthDto {
-    email: string
-    password: string     
+    @IsNotEmpty({ message: "E-mail não pode ser vazio!" })
+    email: string;
+
+    @IsNotEmpty({ message: "Senha não pode ser vazia!" })
+    password: string;   
 }
