@@ -44,7 +44,7 @@ export class ProductService {
 
   private async validateFieldsProduct(createProductDto: CreateProductDto, file: Express.Multer.File) {
     if(file) 
-      if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg')) throw new ErrorExceptionFilters('UNSUPPORTED_MEDIA_TYPE', `A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
+      if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) throw new ErrorExceptionFilters('UNSUPPORTED_MEDIA_TYPE', `A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
 
     if(isNaN(Number(createProductDto.price))) throw new ErrorExceptionFilters('BAD_REQUEST', `O preço do produto deve ser um valor numérico!`);
 

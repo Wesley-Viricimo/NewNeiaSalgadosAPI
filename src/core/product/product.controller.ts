@@ -6,7 +6,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { Public } from 'src/shared/decorators/publicRoute.decorator';
 
-@Controller('products')
+@Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
