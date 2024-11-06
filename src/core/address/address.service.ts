@@ -170,7 +170,7 @@ export class AddressService {
 
   }
 
-  async findAddressesByUserId(userId: number, page: number, perPage: number) : Promise<PaginatedOutputDto<Object>>{
+  async findAddressesByUserId(userId: number, page: number, perPage: number): Promise<PaginatedOutputDto<Object>>{
     
     const paginate: PaginatorTypes.PaginateFunction = paginator({ perPage });
 

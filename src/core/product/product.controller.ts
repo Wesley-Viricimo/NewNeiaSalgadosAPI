@@ -1,10 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
+import { ApiPaginatedResponse } from 'src/shared/decorators/pagination.decorator';
+import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+//import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { Public } from 'src/shared/decorators/publicRoute.decorator';
+import { Product } from './entities/product.entity';
 
 @Controller('product')
 export class ProductController {
@@ -19,19 +22,24 @@ export class ProductController {
     return this.productService.create(createProductDto, file);
   }
 
+  @ApiPaginatedResponse(Product)
   @Get()
-  findAll() {
-    return this.productService.findAll();
+  async findAll(
+    @Query('page') page: number = 1,
+    @Query('perPage') perPage: number = 10,
+  ): Promise<PaginatedOutputDto<Object>> {
+    return await this.productService.findAll(page, perPage);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productService.findOne(+id);
+  findById(@Param('id') id: string) {
+    return this.productService.findById(+id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return this.productService.update(+id, updateProductDto);
+  @UseInterceptors(FileInterceptor('imagem-produto'))
+  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto, @UploadedFile() file: Express.Multer.File) {
+    return this.productService.update(+id, updateProductDto, file);
   }
 
   @Delete(':id')
