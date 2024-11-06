@@ -141,7 +141,7 @@ export class ProductService {
       data: {
         idProduct: id,
         description: updateProductDto.description,
-        price: updateProductDto.price,
+        price: Number(updateProductDto.price),
         urlImage: file? file.originalname : updateProductDto.urlImage
       }
     })
@@ -187,7 +187,22 @@ export class ProductService {
     }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} product`;
+  async delete(id: number) {
+    const product = await this.prismaService.product.findUnique({
+      where: { idProduct: id }
+    });
+
+    if(!product) throw new ErrorExceptionFilters('NOT_FOUND', `Este produto não está cadastrado no sistema!`);
+
+    return await this.prismaService.product.delete({
+      where: { idProduct: id }
+    })
+    .catch(() => {
+      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao excluir produto!' };
+      throw new ErrorExceptionFilters('BAD_REQUEST', {
+        message,
+        statusCode: HttpStatus.BAD_REQUEST
+      });
+    });
   }
 }

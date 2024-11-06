@@ -5,16 +5,14 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiPaginatedResponse } from 'src/shared/decorators/pagination.decorator';
 import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
-//import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
-import { Public } from 'src/shared/decorators/publicRoute.decorator';
+import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { Product } from './entities/product.entity';
 
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
-  //@Roles('ADMIN')
-  @Public()
+  @Roles('ADMIN', 'DEV')
   @HttpCode(HttpStatus.CREATED)
   @Post()
   @UseInterceptors(FileInterceptor('imagem-produto'))
@@ -36,14 +34,18 @@ export class ProductController {
     return this.productService.findById(+id);
   }
 
+  @Roles('ADMIN', 'DEV')
+  @HttpCode(HttpStatus.CREATED)
   @Patch(':id')
   @UseInterceptors(FileInterceptor('imagem-produto'))
   update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto, @UploadedFile() file: Express.Multer.File) {
     return this.productService.update(+id, updateProductDto, file);
   }
 
+  @Roles('ADMIN', 'DEV')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.productService.remove(+id);
+  delete(@Param('id') id: string) {
+    return this.productService.delete(+id);
   }
 }
