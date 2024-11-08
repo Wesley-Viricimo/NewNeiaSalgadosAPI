@@ -26,12 +26,12 @@ export class AddressController {
     return this.addressService.findAddressByCep(cep);
   }
 
-  @ApiPaginatedResponse(Address)
   @Get('user/all')
+  @ApiPaginatedResponse(Address)
   async findAddressByUserId(
     @Req() request: Request,
     @Query('page') page: number = 1,
-    @Query('perPage') perPage: number = 10,
+    @Query('perPage') perPage: number = 10
   ): Promise<PaginatedOutputDto<Object>> {
     return await this.addressService.findAddressesByUserId(request['userId'], page, perPage);
   }

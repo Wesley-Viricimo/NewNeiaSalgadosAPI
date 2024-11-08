@@ -4,6 +4,9 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
 import { PAYMENT_METHOD, TYPE_OF_DELIVERY, ORDER_STATUS_DELIVERY, ORDER_STATUS_WITHDRAWAL } from './constants/order.constants';
+import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+import { Order, Prisma } from '@prisma/client';
+import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 
 @Injectable()
 export class OrderService {
@@ -135,8 +138,74 @@ export class OrderService {
      if(address.idUser !== user.idUser) throw new ErrorExceptionFilters('BAD_REQUEST', `O endereço fornecido não pertence a este usuário!`);
   }
 
-  findAll() {
-    return `This action returns all order`;
+  //TODO AJUSTAR CAMPOS RETORNADOS
+  async findAllOrdersByUser(userId: number, page: number, perPage: number): Promise<PaginatedOutputDto<Object>>{
+    
+    const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
+
+    return await paginate<Order, Prisma.OrderFindManyArgs>(
+      this.prismaService.order,
+      { 
+        where: { idUser: userId } ,
+        select: {  // Use `select` para campos escalares
+          idOrder: true,
+          orderStatus: true,
+          paymentMethod: true,
+          typeOfDelivery: true,
+          total: true,
+          user: {  // `include` é permitido dentro de `select` para relações
+            select: {
+              name: true,
+              surname: true,
+              cpf: true,
+              email: true,
+              role: true,
+              isActive: true
+            }
+          },
+          address: {
+            select: {
+              cep: true,
+              state: true,
+              city: true,
+              district: true,
+              road: true,
+              number: true,
+              complement: true
+            }
+          },
+          orderItens: {
+            select: {
+              quantity: true,
+              product: {
+                select: {
+                  description: true,
+                  price: true
+                }
+              }
+            }
+          }
+        },
+      },
+      { page: page, perPage: perPage }
+    )
+    .then(response => {
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedidos listados com sucesso.' };
+      return {
+        data: response.data,
+        meta: response.meta,
+        message,
+        statusCode: HttpStatus.OK
+      }
+    })
+    .catch((err) => {
+      console.log(err)
+      const message = { severity: 'error', summary: 'Erro ao listar pedidos', detail: 'Erro' };
+        throw new ErrorExceptionFilters('BAD_REQUEST', {
+          message,
+          statusCode: HttpStatus.BAD_REQUEST,
+        })
+    });
   }
 
   findOne(id: number) {
