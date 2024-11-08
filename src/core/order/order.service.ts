@@ -17,6 +17,8 @@ export class OrderService {
   async create(createOrderDto: CreateOrderDto, userId: number) {
     
     await this.validationFieldsOrder(createOrderDto, userId);
+
+    const totalValue = await this.getTotalOrderValue(createOrderDto);
     
      const orderItemsData = createOrderDto.orderItens.map((item) => ({
       idProduct: item.product.idProduct,
@@ -28,7 +30,7 @@ export class OrderService {
         typeOfDelivery: TYPE_OF_DELIVERY[createOrderDto.typeOfDelivery],
         orderStatus: createOrderDto.typeOfDelivery === 0 ? ORDER_STATUS_DELIVERY[0] : ORDER_STATUS_WITHDRAWAL[0],
         paymentMethod: PAYMENT_METHOD[createOrderDto.paymentMethod],
-        total: 30.35,
+        total: totalValue,
         orderItens: {
           create: orderItemsData
         },
@@ -111,14 +113,6 @@ export class OrderService {
 
     if(createOrderDto.orderItens.length === 0) throw new ErrorExceptionFilters('BAD_REQUEST', `Pedido não pode ser realizado sem itens!`);
 
-    for(const item of createOrderDto.orderItens) {
-      const product = await this.prismaService.product.findUnique({
-        where: { idProduct: item.product.idProduct }
-      });
-
-      if(!product) throw new ErrorExceptionFilters('BAD_REQUEST', `Produto id: ${item.product.idProduct} não está cadastrado no sistema!`);
-     }
-
     const user = await this.prismaService.user.findUnique({
       where: { idUser: userId }
     });
@@ -135,10 +129,99 @@ export class OrderService {
       where: { idAddress: createOrderDto.idAddress }
      });
 
+     if(!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este endereço não está cadastrado no sistema!`);
+
      if(address.idUser !== user.idUser) throw new ErrorExceptionFilters('BAD_REQUEST', `O endereço fornecido não pertence a este usuário!`);
   }
 
-  //TODO AJUSTAR CAMPOS RETORNADOS
+  private async getTotalOrderValue(createOrderDto: CreateOrderDto) {
+    let totalValue = 0;
+
+    for(const item of createOrderDto.orderItens) {
+      const product = await this.prismaService.product.findUnique({
+        where: { idProduct: item.product.idProduct }
+      });
+
+      if(!product) throw new ErrorExceptionFilters('BAD_REQUEST', `Produto id: ${item.product.idProduct} não está cadastrado no sistema!`);
+
+      totalValue += product.price * item.quantity;
+     }
+
+     return totalValue;
+  }
+
+  async findAllOrders(page: number, perPage: number, isPending: boolean = false): Promise<PaginatedOutputDto<Object>> {
+    const selectedFields = {  // Use `select` para campos escalares
+      
+      idOrder: true,
+      user: {  // `include` é permitido dentro de `select` para relações
+        select: {
+          name: true,
+          surname: true,
+          cpf: true,
+          email: true,
+          role: true,
+          isActive: true
+        }
+      },
+      address: {
+        select: {
+          cep: true,
+          state: true,
+          city: true,
+          district: true,
+          road: true,
+          number: true,
+          complement: true
+        }
+      },
+      orderItens: {
+        select: {
+          quantity: true,
+          product: {
+            select: {
+              description: true,
+              price: true
+            }
+          }
+        }
+      },
+      typeOfDelivery: true,
+      paymentMethod: true,
+      orderStatus: true,
+      total: true, 
+    };
+
+    const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
+
+    return await paginate<Order, Prisma.OrderFindManyArgs>(
+      this.prismaService.order,
+      { 
+        where: isPending ? { isPending: isPending } : undefined,
+        orderBy: { createdAt: isPending? 'asc' : 'desc' },
+        select: selectedFields
+      },
+      { page: page, perPage: perPage }
+    )
+    .then(response => {
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedidos listados com sucesso.' };
+      return {
+        data: response.data,
+        meta: response.meta,
+        message,
+        statusCode: HttpStatus.OK
+      }
+    })
+    .catch((err) => {
+      console.log(err)
+      const message = { severity: 'error', summary: 'Erro ao listar pedidos', detail: 'Erro' };
+        throw new ErrorExceptionFilters('BAD_REQUEST', {
+          message,
+          statusCode: HttpStatus.BAD_REQUEST,
+        })
+    });
+  }
+
   async findAllOrdersByUser(userId: number, page: number, perPage: number): Promise<PaginatedOutputDto<Object>>{
     
     const selectedFields = {  // Use `select` para campos escalares
@@ -281,7 +364,7 @@ export class OrderService {
     }
   }
 
-  update(id: number, updateOrderDto: UpdateOrderDto) {
+  update(id: number, updateOrderDto: UpdateOrderDto, userId: number) {
     return `This action updates a #${id} order`;
   }
 

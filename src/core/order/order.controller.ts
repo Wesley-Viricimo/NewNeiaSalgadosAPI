@@ -6,32 +6,39 @@ import { ApiPaginatedResponse } from 'src/shared/decorators/pagination.decorator
 import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { Order } from './entities/order.entity';
+import { FastifyRequest } from 'fastify';
 
 @Controller('order')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto, @Req() request: Request) {
+  create(@Body() createOrderDto: CreateOrderDto, @Req() request: FastifyRequest) {
     return this.orderService.create(createOrderDto, request['userId']);
   }
 
   @Roles('ADMIN', 'DEV')
   @Get()
-  findAllOrders() {
-    
+  findAllOrders(
+    @Query('page') page: number = 1,
+    @Query('perPage') perPage: number = 10
+  ): Promise<PaginatedOutputDto<Object>> {
+    return this.orderService.findAllOrders(page, perPage);
   }
 
   @Roles('ADMIN', 'DEV')
   @Get('pending')
-  findAllOrdersPending() {
-    
+  async findAllOrdersPending(
+    @Query('page') page: number = 1,
+    @Query('perPage') perPage: number = 10
+  ): Promise<PaginatedOutputDto<Object>> {
+    return await this.orderService.findAllOrders(page, perPage, true);
   }
 
   @Get('user/all')
   @ApiPaginatedResponse(Order)
   async findAllOrdersByUser(
-    @Req() request: Request,
+    @Req() request: FastifyRequest,
     @Query('page') page: number = 1,
     @Query('perPage') perPage: number = 10
   ): Promise<PaginatedOutputDto<Object>> {
@@ -39,13 +46,17 @@ export class OrderController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Req() request: Request,) {
+  findOne(@Param('id') id: string, @Req() request: FastifyRequest) {
     return this.orderService.findById(+id, request['userId']);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
-    return this.orderService.update(+id, updateOrderDto);
+  update(
+    @Param('id') id: string, 
+    @Body() updateOrderDto: UpdateOrderDto,
+    @Req() request: FastifyRequest
+  ) {
+    return this.orderService.update(+id, updateOrderDto, request['userId']);
   }
   
 }

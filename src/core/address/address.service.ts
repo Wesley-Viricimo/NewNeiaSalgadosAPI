@@ -103,7 +103,7 @@ export class AddressService {
 
     if(!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['address']} não foi encontrado!`);
 
-    if(address.idUser !== userId) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${AddressSide['address']} não pertence a este usuário!`);
+    if(address.idUser !== userId) throw new ErrorExceptionFilters('FORBIDDEN', `Este ${AddressSide['address']} não pertence a este usuário!`);
 
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço listado com sucesso!' };
 

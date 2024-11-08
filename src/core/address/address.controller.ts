@@ -5,6 +5,7 @@ import { CreateAddressDto } from './dto/create-address.dto';
 import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { Address } from './entities/address.entity';
+import { FastifyRequest } from 'fastify';
 
 @Controller('address')
 export class AddressController {
@@ -12,12 +13,12 @@ export class AddressController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() address: CreateAddressDto, @Req() request: Request) {
+  create(@Body() address: CreateAddressDto, @Req() request: FastifyRequest) {
     return this.addressService.create(address, request['userId']);
   }
 
   @Get(':id')
-  findById(@Param('id') id: number, @Req() request: Request) {
+  findById(@Param('id') id: number, @Req() request: FastifyRequest) {
     return this.addressService.findById(+id, request['userId']);
   }
 
@@ -29,7 +30,7 @@ export class AddressController {
   @Get('user/all')
   @ApiPaginatedResponse(Address)
   async findAddressByUserId(
-    @Req() request: Request,
+    @Req() request: FastifyRequest,
     @Query('page') page: number = 1,
     @Query('perPage') perPage: number = 10
   ): Promise<PaginatedOutputDto<Object>> {
@@ -41,14 +42,14 @@ export class AddressController {
   update(
     @Param('id') id: string, 
     @Body() updateAddressDto: UpdateAddressDto,
-    @Req() request: Request
+    @Req() request: FastifyRequest
   ) {
     return this.addressService.update(+id, updateAddressDto, request['userId']);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  delete(@Param('id') id: string, @Req() request: Request) {
+  delete(@Param('id') id: string, @Req() request: FastifyRequest) {
     return this.addressService.delete(+id, request['userId']);
   }
 }
