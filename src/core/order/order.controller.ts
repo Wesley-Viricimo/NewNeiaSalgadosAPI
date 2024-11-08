@@ -39,8 +39,8 @@ export class OrderController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.orderService.findOne(+id);
+  findOne(@Param('id') id: string, @Req() request: Request,) {
+    return this.orderService.findById(+id, request['userId']);
   }
 
   @Patch(':id')

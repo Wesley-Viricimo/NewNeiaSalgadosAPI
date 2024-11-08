@@ -141,51 +141,54 @@ export class OrderService {
   //TODO AJUSTAR CAMPOS RETORNADOS
   async findAllOrdersByUser(userId: number, page: number, perPage: number): Promise<PaginatedOutputDto<Object>>{
     
+    const selectedFields = {  // Use `select` para campos escalares
+      
+      idOrder: true,
+      user: {  // `include` é permitido dentro de `select` para relações
+        select: {
+          name: true,
+          surname: true,
+          cpf: true,
+          email: true,
+          role: true,
+          isActive: true
+        }
+      },
+      address: {
+        select: {
+          cep: true,
+          state: true,
+          city: true,
+          district: true,
+          road: true,
+          number: true,
+          complement: true
+        }
+      },
+      orderItens: {
+        select: {
+          quantity: true,
+          product: {
+            select: {
+              description: true,
+              price: true
+            }
+          }
+        }
+      },
+      typeOfDelivery: true,
+      paymentMethod: true,
+      orderStatus: true,
+      total: true, 
+    };
+
     const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
 
     return await paginate<Order, Prisma.OrderFindManyArgs>(
       this.prismaService.order,
       { 
         where: { idUser: userId } ,
-        select: {  // Use `select` para campos escalares
-          idOrder: true,
-          orderStatus: true,
-          paymentMethod: true,
-          typeOfDelivery: true,
-          total: true,
-          user: {  // `include` é permitido dentro de `select` para relações
-            select: {
-              name: true,
-              surname: true,
-              cpf: true,
-              email: true,
-              role: true,
-              isActive: true
-            }
-          },
-          address: {
-            select: {
-              cep: true,
-              state: true,
-              city: true,
-              district: true,
-              road: true,
-              number: true,
-              complement: true
-            }
-          },
-          orderItens: {
-            select: {
-              quantity: true,
-              product: {
-                select: {
-                  description: true,
-                  price: true
-                }
-              }
-            }
-          }
-        },
+        select: selectedFields,
       },
       { page: page, perPage: perPage }
     )
@@ -208,8 +211,74 @@ export class OrderService {
     });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} order`;
+  async findById(id: number, userId: number) {
+    
+    const selectedFields = {  // Use `select` para campos escalares
+      idOrder: true,
+      idUser: true,
+      orderStatus: true,
+      paymentMethod: true,
+      typeOfDelivery: true,
+      total: true,
+      user: {  // `include` é permitido dentro de `select` para relações
+        select: {
+          name: true,
+          surname: true,
+          cpf: true,
+          email: true,
+          role: true,
+          isActive: true
+        }
+      },
+      address: {
+        select: {
+          cep: true,
+          state: true,
+          city: true,
+          district: true,
+          road: true,
+          number: true,
+          complement: true
+        }
+      },
+      orderItens: {
+        select: {
+          quantity: true,
+          product: {
+            select: {
+              description: true,
+              price: true
+            }
+          }
+        }
+      }
+    };
+    
+    const order = await this.prismaService.order.findUnique({
+      where: { idOrder: id },
+      select: selectedFields
+    });
+
+    if(!order) throw new ErrorExceptionFilters('NOT_FOUND', `Este pedido não foi encontrado!`);
+
+    if(order.idUser !== userId) throw new ErrorExceptionFilters('FORBIDDEN', `Este pedido não pertence a este usuário!`);
+
+    const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço listado com sucesso!' };
+
+    return {
+      data: {
+        idOrder: order.idOrder,
+        user: order.user,
+        address: order.address,
+        orderItens: order.orderItens,
+        typeOfDelivery: order.typeOfDelivery,
+        paymentMethod: order.paymentMethod,
+        orderStatus: order.orderStatus,
+        total: order.total
+      }, 
+      message,
+      statusCode: HttpStatus.OK
+    }
   }
 
   update(id: number, updateOrderDto: UpdateOrderDto) {
