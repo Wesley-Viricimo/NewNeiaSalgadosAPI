@@ -50,7 +50,7 @@ export class AuthGuard implements CanActivate {
       where: { idUser: requestInfo.idUser }
     });
 
-    if (!userInfo) throw new HttpException('Usuário não foi encontrado', HttpStatus.NOT_FOUND);
+    if (!userInfo) throw new HttpException('Usuário não está cadastrado no sistema!', HttpStatus.NOT_FOUND);
 
     if(!userInfo.isActive)
       this.inativeUserResponse();

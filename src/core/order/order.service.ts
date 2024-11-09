@@ -340,7 +340,7 @@ export class OrderService {
       select: selectedFields
     });
 
-    if(!order) throw new ErrorExceptionFilters('NOT_FOUND', `Este pedido não foi encontrado!`);
+    if(!order) throw new ErrorExceptionFilters('NOT_FOUND', `Este pedido não está cadastrado no sistema!`);
 
     if(order.idUser !== userId) throw new ErrorExceptionFilters('FORBIDDEN', `Este pedido não pertence a este usuário!`);
 

@@ -103,7 +103,7 @@ export class AddressService {
       select: selectedFields
     });
 
-    if(!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['address']} não foi encontrado!`);
+    if(!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['address']} não está cadastrado no sistema!`);
 
     if(address.idUser !== userId) throw new ErrorExceptionFilters('FORBIDDEN', `Este ${AddressSide['address']} não pertence a este usuário!`);
 
@@ -143,7 +143,7 @@ export class AddressService {
         statusCode: HttpStatus.OK
       }
     } catch (error) {
-      const message = { severity: 'error', summary: 'Erro', detail: 'CEP informado não foi encontrado!' };
+      const message = { severity: 'error', summary: 'Erro', detail: 'CEP informado não está cadastrado no sistema!' };
         throw new ErrorExceptionFilters('NOT_FOUND', {
           message,
           statusCode: HttpStatus.NOT_FOUND,
@@ -230,7 +230,7 @@ export class AddressService {
       where: { idAddress: id }
     });
 
-    if(!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['address']} não foi encontrado!`);
+    if(!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['address']} não está cadastrado no sistema!`);
 
     if(address.idUser !== userId) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${AddressSide['address']} não pertence a este usuário!`);
 
@@ -291,7 +291,7 @@ export class AddressService {
       where: { idAddress: id }
     });
   
-    if (!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['address']} não foi encontrado!`);
+    if (!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['address']} não está cadastrado no sistema!`);
   
     if (address.idUser !== userId) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${AddressSide['address']} não pertence a este usuário!`);
   
