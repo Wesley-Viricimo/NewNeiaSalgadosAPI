@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Req, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -13,6 +13,7 @@ export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createOrderDto: CreateOrderDto, @Req() request: FastifyRequest) {
     return this.orderService.create(createOrderDto, request['userId']);
   }
@@ -51,6 +52,7 @@ export class OrderController {
   }
 
   @Patch(':id')
+  @HttpCode(HttpStatus.CREATED)
   update(
     @Param('id') id: string, 
     @Body() updateOrderDto: UpdateOrderDto,

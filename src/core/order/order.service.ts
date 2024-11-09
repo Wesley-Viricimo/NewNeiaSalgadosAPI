@@ -152,7 +152,6 @@ export class OrderService {
 
   async findAllOrders(page: number, perPage: number, isPending: boolean = false): Promise<PaginatedOutputDto<Object>> {
     const selectedFields = {  // Use `select` para campos escalares
-      
       idOrder: true,
       user: {  // `include` é permitido dentro de `select` para relações
         select: {
@@ -225,7 +224,6 @@ export class OrderService {
   async findAllOrdersByUser(userId: number, page: number, perPage: number): Promise<PaginatedOutputDto<Object>>{
     
     const selectedFields = {  // Use `select` para campos escalares
-      
       idOrder: true,
       user: {  // `include` é permitido dentro de `select` para relações
         select: {
@@ -368,7 +366,5 @@ export class OrderService {
     return `This action updates a #${id} order`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} order`;
-  }
+  
 }
