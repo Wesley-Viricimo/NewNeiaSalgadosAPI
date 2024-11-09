@@ -1,15 +1,14 @@
 import { CanActivate, ExecutionContext, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { verify } from 'jsonwebtoken';
-import { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { ROLES_KEY } from '../decorators/rolesPermission.decorator';
 import { ErrorExceptionFilters } from '../utils/services/httpResponseService/errorResponse.service';
+import { FastifyRequest } from 'fastify';
 
 interface UserInfo {
   idUser: number,
   email: string,
-  isActive: boolean,
   role: string
 }
 
@@ -34,11 +33,9 @@ export class AuthGuard implements CanActivate {
 
     if (publicRoute) return true;
 
-    const request = context.switchToHttp().getRequest() as Request;
+    const request = context.switchToHttp().getRequest<FastifyRequest>();
 
     const requestInfo = this.getUserInfo(request);
-
-    if(!requestInfo.isActive) throw new HttpException('Usuário inativo', HttpStatus.UNAUTHORIZED);
 
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
       context.getHandler(),
@@ -49,21 +46,19 @@ export class AuthGuard implements CanActivate {
       this.unauthorizedUserResponse();
     }
 
-    try {
-      const userInfo = await this.prismaService.user.findUnique({
-        where: { idUser: requestInfo.idUser }
-      });
+    const userInfo = await this.prismaService.user.findUnique({
+      where: { idUser: requestInfo.idUser }
+    });
 
-      if (!userInfo) throw new HttpException('Usuário não foi encontrado', HttpStatus.NOT_FOUND);
-      
-    } catch (error) {
-      this.invalidToken();
-    }
+    if (!userInfo) throw new HttpException('Usuário não foi encontrado', HttpStatus.NOT_FOUND);
+
+    if(!userInfo.isActive)
+      this.inativeUserResponse();
 
     return true;
   }
 
-  private getUserInfo(request: Request): UserInfo {
+  private getUserInfo(request: FastifyRequest): UserInfo {
 
     const authorizationHeader = request.headers.authorization as string;
 
@@ -79,7 +74,6 @@ export class AuthGuard implements CanActivate {
       response.idUser = userToken.idUser;
       response.email = userToken.email;
       response.role = userToken.role;
-      response.isActive = userToken.isActive;
 
       request['userId'] = response.idUser;
 
@@ -111,5 +105,13 @@ export class AuthGuard implements CanActivate {
       message,
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
     });
+  }
+
+  private inativeUserResponse() {
+    const message = { severity: 'error', summary: 'Unauthorized', detail: 'Este usuário está inativo!' };
+      throw new ErrorExceptionFilters('UNAUTHORIZED', {
+        message: message,
+        statusCode: HttpStatus.UNAUTHORIZED
+      });
   }
 }

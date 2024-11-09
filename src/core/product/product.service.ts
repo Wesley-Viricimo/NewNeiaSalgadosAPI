@@ -65,7 +65,7 @@ export class ProductService {
 
   async findAll(page: number, perPage: number): Promise<PaginatedOutputDto<Object>> {
 
-    const paginate: PaginatorTypes.PaginateFunction = paginator({ perPage });
+    const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
 
     const selectedFields = {
       idProduct: true,

@@ -2,11 +2,11 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, Upl
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiPaginatedResponse } from 'src/shared/decorators/pagination.decorator';
 import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { Product } from './entities/product.entity';
+import { FileFastifyInterceptor } from "fastify-file-interceptor";
 
 @Controller('product')
 export class ProductController {
@@ -15,7 +15,7 @@ export class ProductController {
   @Roles('ADMIN', 'DEV')
   @HttpCode(HttpStatus.CREATED)
   @Post()
-  @UseInterceptors(FileInterceptor('imagem-produto'))
+  @UseInterceptors(FileFastifyInterceptor('imagem-produto'))
   create(@Body() createProductDto: CreateProductDto, @UploadedFile() file: Express.Multer.File) {
     return this.productService.create(createProductDto, file);
   }
@@ -37,7 +37,7 @@ export class ProductController {
   @Roles('ADMIN', 'DEV')
   @HttpCode(HttpStatus.CREATED)
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('imagem-produto'))
+  @UseInterceptors(FileFastifyInterceptor('imagem-produto'))
   update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto, @UploadedFile() file: Express.Multer.File) {
     return this.productService.update(+id, updateProductDto, file);
   }

@@ -52,6 +52,7 @@ export class AddressService {
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço cadastrado com sucesso!' };
       return {
         data: {
+          idAddress: address.idAddress,
           cep: address.cep,
           state: address.state,
           city: address.city,
@@ -77,14 +78,7 @@ export class AddressService {
   async findById(addressId: number, userId: number) {
 
     const selectedFields = {
-      cep: true,
-      state: true,
-      city: true,
-      district: true,
-      road: true,
-      number: true,
-      complement: true,
-      idUser: true,
+      idAddress: true,
       user: {
         select: { 
           name: true,
@@ -94,6 +88,14 @@ export class AddressService {
           role: true,
         },
       },
+      cep: true,
+      state: true,
+      city: true,
+      district: true,
+      road: true,
+      number: true,
+      complement: true,
+      idUser: true
     };
 
     const address = await this.prismaService.address.findUnique({
@@ -103,20 +105,21 @@ export class AddressService {
 
     if(!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este ${AddressSide['address']} não foi encontrado!`);
 
-    if(address.idUser !== userId) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${AddressSide['address']} não pertence a este usuário!`);
+    if(address.idUser !== userId) throw new ErrorExceptionFilters('FORBIDDEN', `Este ${AddressSide['address']} não pertence a este usuário!`);
 
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço listado com sucesso!' };
 
     return {
       data: {
+        idAddress: address.idAddress,
+        user: address.user,
         cep: address.cep,
         state: address.state,
         city: address.city,
         district: address.district,
         road: address.road,
         number: address.number,
-        complement: address.complement,
-        user: address.user
+        complement: address.complement
       },
       message,
       statusCode: HttpStatus.OK
@@ -175,6 +178,17 @@ export class AddressService {
     const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
 
     const selectedFields = {
+      idAddress: true,
+      user: {  
+        select: {
+          name: true,
+          surname: true,
+          cpf: true,
+          email: true,
+          role: true,
+          isActive: true
+        }
+      },
       cep: true,
       state: true,
       city: true,
@@ -248,14 +262,15 @@ export class AddressService {
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço atualizado com sucesso!' };
       return {
         data: {
+          idAddress: address.idAddress,
+          user: address.user,
           cep: address.cep,
           state: address.state,
           city: address.city,
           district: address.district,
           road: address.road,
           number: address.number,
-          complement: address.complement,
-          user: address.user
+          complement: address.complement
         },
         message,
         statusCode: HttpStatus.CREATED
