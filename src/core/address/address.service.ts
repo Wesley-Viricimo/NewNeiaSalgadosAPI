@@ -8,6 +8,7 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { AddressSide } from './entities/address.entity';
 import { Address, Prisma } from '@prisma/client';
 import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+import { userSelectConfig, addressByIdSelectConfig, addressSelectConfig } from './config/address-select-config';
 
 @Injectable()
 export class AddressService {
@@ -36,16 +37,7 @@ export class AddressService {
         }
       },
       include: {
-        user: {
-          select: {
-            name: true,
-            surname: true,
-            cpf: true,
-            email: true,
-            role: true,
-            isActive: true
-          }
-        }, 
+        user: userSelectConfig
       }
     })
     .then(address => {
@@ -77,26 +69,7 @@ export class AddressService {
 
   async findById(addressId: number, userId: number) {
 
-    const selectedFields = {
-      idAddress: true,
-      user: {
-        select: { 
-          name: true,
-          surname: true,
-          cpf: true,
-          email: true,
-          role: true,
-        },
-      },
-      cep: true,
-      state: true,
-      city: true,
-      district: true,
-      road: true,
-      number: true,
-      complement: true,
-      idUser: true
-    };
+    const selectedFields = addressByIdSelectConfig;
 
     const address = await this.prismaService.address.findUnique({
       where: { idAddress: addressId },
@@ -177,26 +150,7 @@ export class AddressService {
     
     const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
 
-    const selectedFields = {
-      idAddress: true,
-      user: {  
-        select: {
-          name: true,
-          surname: true,
-          cpf: true,
-          email: true,
-          role: true,
-          isActive: true
-        }
-      },
-      cep: true,
-      state: true,
-      city: true,
-      district: true,
-      road: true,
-      number: true,
-      complement: true
-    };
+    const selectedFields = addressSelectConfig;
 
     return await paginate<Address, Prisma.AddressFindManyArgs>(
       this.prismaService.address,
@@ -246,16 +200,7 @@ export class AddressService {
         complement: updateAddressDto.complement,
       },
       include: {
-        user: {
-          select: {
-            name: true,
-            surname: true,
-            cpf: true,
-            email: true,
-            role: true,
-            isActive: true
-          }
-        }, 
+        user: userSelectConfig
       }
     })
     .then(address => {

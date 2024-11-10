@@ -7,6 +7,7 @@ import { PAYMENT_METHOD, TYPE_OF_DELIVERY, ORDER_STATUS_DELIVERY, ORDER_STATUS_W
 import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
 import { Order, Prisma } from '@prisma/client';
 import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
+import { userSelectConfig, addressSelectConfig, orderItensSelectConfig, orderSelectFields, orderSelectByIdFields } from 'src/core/order/config/order-select-config';
 
 @Injectable()
 export class OrderService {
@@ -46,38 +47,9 @@ export class OrderService {
         }
       },
       include: {
-        user: {
-          select: {
-            name: true,
-            surname: true,
-            cpf: true,
-            email: true,
-            role: true,
-            isActive: true
-          }
-        },
-        address: {
-          select: {
-            cep: true,
-            state: true,
-            city: true,
-            district: true,
-            road: true,
-            number: true,
-            complement: true
-          }
-        },
-        orderItens: {
-          select: {
-            quantity: true,
-            product: {
-              select: {
-                description: true,
-                price: true
-              }
-            }
-          }
-        }
+        user: userSelectConfig,
+        address: addressSelectConfig,
+        orderItens: orderItensSelectConfig
       }
      })
      .then(order => {
@@ -151,45 +123,7 @@ export class OrderService {
   }
 
   async findAllOrders(page: number, perPage: number, isPending: boolean = false): Promise<PaginatedOutputDto<Object>> {
-    const selectedFields = {  // Use `select` para campos escalares
-      idOrder: true,
-      user: {  // `include` é permitido dentro de `select` para relações
-        select: {
-          name: true,
-          surname: true,
-          cpf: true,
-          email: true,
-          role: true,
-          isActive: true
-        }
-      },
-      address: {
-        select: {
-          cep: true,
-          state: true,
-          city: true,
-          district: true,
-          road: true,
-          number: true,
-          complement: true
-        }
-      },
-      orderItens: {
-        select: {
-          quantity: true,
-          product: {
-            select: {
-              description: true,
-              price: true
-            }
-          }
-        }
-      },
-      typeOfDelivery: true,
-      paymentMethod: true,
-      orderStatus: true,
-      total: true, 
-    };
+    const selectedFields = orderSelectFields;
 
     const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
 
@@ -223,45 +157,7 @@ export class OrderService {
 
   async findAllOrdersByUser(userId: number, page: number, perPage: number): Promise<PaginatedOutputDto<Object>>{
     
-    const selectedFields = {  // Use `select` para campos escalares
-      idOrder: true,
-      user: {  // `include` é permitido dentro de `select` para relações
-        select: {
-          name: true,
-          surname: true,
-          cpf: true,
-          email: true,
-          role: true,
-          isActive: true
-        }
-      },
-      address: {
-        select: {
-          cep: true,
-          state: true,
-          city: true,
-          district: true,
-          road: true,
-          number: true,
-          complement: true
-        }
-      },
-      orderItens: {
-        select: {
-          quantity: true,
-          product: {
-            select: {
-              description: true,
-              price: true
-            }
-          }
-        }
-      },
-      typeOfDelivery: true,
-      paymentMethod: true,
-      orderStatus: true,
-      total: true, 
-    };
+    const selectedFields = orderSelectFields;
 
     const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
 
@@ -294,46 +190,7 @@ export class OrderService {
 
   async findById(id: number, userId: number) {
     
-    const selectedFields = {  // Use `select` para campos escalares
-      idOrder: true,
-      idUser: true,
-      orderStatus: true,
-      paymentMethod: true,
-      typeOfDelivery: true,
-      total: true,
-      user: {  // `include` é permitido dentro de `select` para relações
-        select: {
-          name: true,
-          surname: true,
-          cpf: true,
-          email: true,
-          role: true,
-          isActive: true
-        }
-      },
-      address: {
-        select: {
-          cep: true,
-          state: true,
-          city: true,
-          district: true,
-          road: true,
-          number: true,
-          complement: true
-        }
-      },
-      orderItens: {
-        select: {
-          quantity: true,
-          product: {
-            select: {
-              description: true,
-              price: true
-            }
-          }
-        }
-      }
-    };
+    const selectedFields = orderSelectByIdFields;
     
     const order = await this.prismaService.order.findUnique({
       where: { idOrder: id },

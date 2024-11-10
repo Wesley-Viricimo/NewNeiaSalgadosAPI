@@ -7,6 +7,7 @@ import { PaginatorTypes, paginator } from '@nodeteam/nestjs-prisma-pagination';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
 import { Prisma, Product } from '@prisma/client';
+import { productSelectConfig } from './config/product-select-config';
 
 @Injectable()
 export class ProductService {
@@ -67,12 +68,7 @@ export class ProductService {
 
     const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
 
-    const selectedFields = {
-      idProduct: true,
-      description: true,
-      price: true,
-      urlImage: true,
-    };
+    const selectedFields = productSelectConfig;
 
     return await paginate<Product, Prisma.ProductFindManyArgs>(
       this.prismaService.product,
@@ -98,12 +94,7 @@ export class ProductService {
 
   async findById(id: number) {
 
-    const selectedFields = {
-      idProduct: true,
-      description: true,
-      price: true,
-      urlImage: true,
-    };
+    const selectedFields = productSelectConfig;
 
     const product = await this.prismaService.product.findUnique({
       where: { idProduct: id },
