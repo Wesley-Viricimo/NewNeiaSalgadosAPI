@@ -112,9 +112,8 @@ export class OrderService {
       if (order.orderStatus == 'ENTREGUE' || order.orderStatus == 'CANCELADO') throw new ErrorExceptionFilters('BAD_REQUEST', `Pedidos entregues ou cancelados não podem ser atualizados!`);
 
       if (order.orderStatus == 'PREPARANDO') {
-        
         const tenMinutesAgo = subMinutes(new Date(), 10);
-        if (isAfter(tenMinutesAgo, order.updatedAt)) throw new ErrorExceptionFilters('BAD_REQUEST', `Pedidos pendentes só podem ser atualizados até 10 minutos após a última atualização!`);
+        if (isAfter(tenMinutesAgo, order.orderStatusUpdatedAt)) throw new ErrorExceptionFilters('BAD_REQUEST', `Pedidos pendentes só podem ser atualizados até 10 minutos após a última atualização!`);
       }
     } else {
       const orderPending = await this.prismaService.order.findFirst({
