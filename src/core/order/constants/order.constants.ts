@@ -14,7 +14,7 @@ export const ORDER_STATUS_DELIVERY = {
     1: "RECEBIDO",
     2: "PREPARANDO",
     3: "SAIU PARA ENTREGA",
-    4: "ETREGUE",
+    4: "ENTREGUE",
     5: "CANCELADO"
 }
 
@@ -23,5 +23,6 @@ export const ORDER_STATUS_WITHDRAWAL= {
     1: "RECEBIDO",
     2: "PREPARANDO",
     3: "PRONTO PARA RETIRADA",
-    4: "CANCELADO"
+    4: "ENTREGUE",
+    5: "CANCELADO"
 }

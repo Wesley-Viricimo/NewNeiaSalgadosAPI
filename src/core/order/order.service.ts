@@ -8,6 +8,7 @@ import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
 import { Order, Prisma } from '@prisma/client';
 import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { userSelectConfig, addressSelectConfig, orderItensSelectConfig, orderSelectFields, orderSelectByIdFields } from 'src/core/order/config/order-select-config';
+import { subMinutes, isAfter } from 'date-fns';
 
 @Injectable()
 export class OrderService {
@@ -17,9 +18,9 @@ export class OrderService {
 
   async create(createOrderDto: CreateOrderDto, userId: number) {
     
-    await this.validationFieldsOrder(createOrderDto, userId);
+    await this.validateOrderFields(createOrderDto, userId);
 
-    const totalValue = await this.getTotalOrderValue(createOrderDto);
+    const totalValue = await this.calculateTotalOrderValue(createOrderDto.orderItens);
     
      const orderItemsData = createOrderDto.orderItens.map((item) => ({
       idProduct: item.product.idProduct,
@@ -78,48 +79,66 @@ export class OrderService {
      });
   }
 
-  private async validationFieldsOrder(createOrderDto: CreateOrderDto, userId: number) {
-    if(!TYPE_OF_DELIVERY[createOrderDto.typeOfDelivery]) throw new ErrorExceptionFilters('BAD_REQUEST', `Tipo de entrega: ${createOrderDto.typeOfDelivery} inválido!`);
-
-    if(!PAYMENT_METHOD[createOrderDto.paymentMethod]) throw new ErrorExceptionFilters('BAD_REQUEST', `Forma de pagamento: ${createOrderDto.paymentMethod} inválida!`);
-
-    if(createOrderDto.orderItens.length === 0) throw new ErrorExceptionFilters('BAD_REQUEST', `Pedido não pode ser realizado sem itens!`);
-
+  private async validateOrderFields(orderDto: CreateOrderDto | UpdateOrderDto, userId: number, isUpdate = false, orderId?: number) {
+    if (!TYPE_OF_DELIVERY[orderDto.typeOfDelivery]) throw new ErrorExceptionFilters('BAD_REQUEST', `Tipo de entrega: ${orderDto.typeOfDelivery} inválido!`);
+  
+    if (!PAYMENT_METHOD[orderDto.paymentMethod]) throw new ErrorExceptionFilters('BAD_REQUEST', `Forma de pagamento: ${orderDto.paymentMethod} inválida!`);
+  
+    if (orderDto.orderItens.length === 0) throw new ErrorExceptionFilters('BAD_REQUEST', `Pedido não pode ser realizado sem itens!`);
+  
     const user = await this.prismaService.user.findUnique({
       where: { idUser: userId }
     });
+  
+    if (!user) throw new ErrorExceptionFilters('NOT_FOUND', `Este usuário não está cadastrado no sistema!`);
+  
+    const address = await this.prismaService.address.findUnique({
+      where: { idAddress: orderDto.idAddress }
+    });
+  
+    if (!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este endereço não está cadastrado no sistema!`);
+  
+    if (address.idUser !== user.idUser) {
+      throw new ErrorExceptionFilters('BAD_REQUEST', `O endereço fornecido não pertence a este usuário!`);
+    }
+  
+    if (isUpdate) {
+      const order = await this.prismaService.order.findUnique({
+        where: { idOrder: orderId }
+      });
+  
+      if (order?.idUser !== userId) throw new ErrorExceptionFilters('FORBIDDEN', `Este pedido não pertence a este usuário!`);
 
-    if(!user) throw new ErrorExceptionFilters('NOT_FOUND', `Este usuário não está cadastrado no sistema!`);
-    
-     const orderPending = await this.prismaService.order.findFirst({
+      if (order.orderStatus == 'ENTREGUE' || order.orderStatus == 'CANCELADO') throw new ErrorExceptionFilters('BAD_REQUEST', `Pedidos entregues ou cancelados não podem ser atualizados!`);
+
+      if (order.orderStatus == 'PREPARANDO') {
+        
+        const tenMinutesAgo = subMinutes(new Date(), 10);
+        if (isAfter(tenMinutesAgo, order.updatedAt)) throw new ErrorExceptionFilters('BAD_REQUEST', `Pedidos pendentes só podem ser atualizados até 10 minutos após a última atualização!`);
+      }
+    } else {
+      const orderPending = await this.prismaService.order.findFirst({
         where: { idUser: userId, isPending: true }
-     });
+      });
+  
+      if (orderPending) throw new ErrorExceptionFilters('BAD_REQUEST', `Já existe um pedido em andamento para este usuário e não é possível realizar outro no momento!`);
+    }
+  }  
 
-     if(orderPending) throw new ErrorExceptionFilters('BAD_REQUEST', `Já existe um pedido em andamento para este usuário e não é possível realizar outro no momento!`);
-
-     const address = await this.prismaService.address.findUnique({
-      where: { idAddress: createOrderDto.idAddress }
-     });
-
-     if(!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este endereço não está cadastrado no sistema!`);
-
-     if(address.idUser !== user.idUser) throw new ErrorExceptionFilters('BAD_REQUEST', `O endereço fornecido não pertence a este usuário!`);
-  }
-
-  private async getTotalOrderValue(createOrderDto: CreateOrderDto) {
+  private async calculateTotalOrderValue(orderItens: Array<{ product: { idProduct: number }, quantity: number }>) {
     let totalValue = 0;
-
-    for(const item of createOrderDto.orderItens) {
+  
+    for (const item of orderItens) {
       const product = await this.prismaService.product.findUnique({
         where: { idProduct: item.product.idProduct }
       });
-
-      if(!product) throw new ErrorExceptionFilters('BAD_REQUEST', `Produto id: ${item.product.idProduct} não está cadastrado no sistema!`);
-
+  
+      if (!product) throw new ErrorExceptionFilters('BAD_REQUEST', `Produto id: ${item.product.idProduct} não está cadastrado no sistema!`);
+  
       totalValue += product.price * item.quantity;
-     }
-
-     return totalValue;
+    }
+  
+    return totalValue;
   }
 
   async findAllOrders(page: number, perPage: number, isPending: boolean = false): Promise<PaginatedOutputDto<Object>> {
@@ -219,9 +238,57 @@ export class OrderService {
     }
   }
 
-  update(id: number, updateOrderDto: UpdateOrderDto, userId: number) {
-    return `This action updates a #${id} order`;
-  }
+  async update(id: number, updateOrderDto: UpdateOrderDto, userId: number) {
 
-  
+    await this.validateOrderFields(updateOrderDto, userId, true, id);
+
+    const totalValue = await this.calculateTotalOrderValue(updateOrderDto.orderItens);
+
+    const orderItemsData = updateOrderDto.orderItens.map((item) => ({
+      idProduct: item.product.idProduct,
+      quantity: item.quantity
+     }));
+
+     return await this.prismaService.order.update({
+      where: { idOrder: id },
+      data: {
+        typeOfDelivery: TYPE_OF_DELIVERY[updateOrderDto.typeOfDelivery],
+        paymentMethod: PAYMENT_METHOD[updateOrderDto.paymentMethod],
+        total: totalValue,
+        orderItens: {
+          create: orderItemsData
+        }
+      },
+      include: {
+        user: userSelectConfig,
+        address: addressSelectConfig,
+        orderItens: orderItensSelectConfig
+      }
+     })
+     .then(order => {
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido atualizado com sucesso!' };
+      return {
+        data: {
+          orderId: order.idOrder,
+          user: order.user,
+          address: order.address,
+          orderStatus: order.orderStatus,
+          paymentMethod: order.paymentMethod,
+          typeOfDelivery: order.typeOfDelivery,
+          orderItens: order.orderItens,
+          total: order.total,
+          isPending: order.isPending
+        },
+        message,
+        statusCode: HttpStatus.CREATED
+      }
+     })
+     .catch(() => {
+      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao atualizar pedido!' };
+      throw new ErrorExceptionFilters('BAD_REQUEST', {
+        message,
+        statusCode: HttpStatus.BAD_REQUEST,
+      })
+     });
+  }
 }
