@@ -60,5 +60,16 @@ export class OrderController {
   ) {
     return this.orderService.update(+id, updateOrderDto, request['userId']);
   }
+
+  @Roles('ADMIN', 'DEV')
+  @Patch(':orderId/orderstatus/:orderstatus')
+  @HttpCode(HttpStatus.CREATED)
+  updateOrderStatus(
+    @Param('orderId') orderId: string,
+    @Param('orderstatus') orderstatus: string,
+    @Body() updateOrderDto: UpdateOrderDto
+  ) {
+    return this.orderService.updateOrderStatus(+orderId, +orderstatus, updateOrderDto);
+  }
   
 }

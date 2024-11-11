@@ -290,4 +290,25 @@ export class OrderService {
       })
      });
   }
+
+  async updateOrderStatus(orderId: number, orderstatus: number, updateOrderDto: updateOrderDto) {
+    
+    const order = this.prismaService.order.findUnique({
+      where: { idOrder: orderId }
+    });
+
+    if(!order) throw new ErrorExceptionFilters('NOT_FOUND', `Este pedido não está cadastrado no sistema!`);
+
+    switch((await order).typeOfDelivery) {
+      case 'ENTREGA': {
+        
+      }
+      break;
+
+      case 'RETIRA': {
+
+      }
+      break
+    }
+  }
 }
