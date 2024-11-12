@@ -66,10 +66,9 @@ export class OrderController {
   @HttpCode(HttpStatus.CREATED)
   updateOrderStatus(
     @Param('orderId') orderId: string,
-    @Param('orderstatus') orderstatus: string,
-    @Body() updateOrderDto: UpdateOrderDto
+    @Param('orderstatus') orderstatus: string
   ) {
-    return this.orderService.updateOrderStatus(+orderId, +orderstatus, updateOrderDto);
+    return this.orderService.validateUpdateOrderStatus(+orderId, +orderstatus);
   }
   
 }

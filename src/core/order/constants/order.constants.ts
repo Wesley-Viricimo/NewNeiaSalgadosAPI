@@ -18,7 +18,7 @@ export const ORDER_STATUS_DELIVERY = {
     5: "CANCELADO"
 }
 
-export const ORDER_STATUS_WITHDRAWAL= {
+export const ORDER_STATUS_WITHDRAWAL = {
     0: "PENDENTE",
     1: "RECEBIDO",
     2: "PREPARANDO",

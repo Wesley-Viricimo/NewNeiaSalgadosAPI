@@ -14,20 +14,20 @@ import { subMinutes, isAfter } from 'date-fns';
 export class OrderService {
   constructor(
     private readonly prismaService: PrismaService
-  ){}
+  ) { }
 
   async create(createOrderDto: CreateOrderDto, userId: number) {
-    
+
     await this.validateOrderFields(createOrderDto, userId);
 
     const totalValue = await this.calculateTotalOrderValue(createOrderDto.orderItens);
-    
-     const orderItemsData = createOrderDto.orderItens.map((item) => ({
+
+    const orderItemsData = createOrderDto.orderItens.map((item) => ({
       idProduct: item.product.idProduct,
       quantity: item.quantity
-     }));
+    }));
 
-     return await this.prismaService.order.create({
+    return await this.prismaService.order.create({
       data: {
         typeOfDelivery: TYPE_OF_DELIVERY[createOrderDto.typeOfDelivery],
         orderStatus: createOrderDto.typeOfDelivery === 0 ? ORDER_STATUS_DELIVERY[0] : ORDER_STATUS_WITHDRAWAL[0],
@@ -52,61 +52,61 @@ export class OrderService {
         address: addressSelectConfig,
         orderItens: orderItensSelectConfig
       }
-     })
-     .then(order => {
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido realizado com sucesso!' };
-      return {
-        data: {
-          user: order.user,
-          address: order.address,
-          orderStatus: order.orderStatus,
-          paymentMethod: order.paymentMethod,
-          typeOfDelivery: order.typeOfDelivery,
-          orderItens: order.orderItens,
-          total: order.total,
-          isPending: order.isPending
-        },
-        message,
-        statusCode: HttpStatus.CREATED
-      }
-     })
-     .catch(() => {
-      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao realizar pedido!' };
-      throw new ErrorExceptionFilters('BAD_REQUEST', {
-        message,
-        statusCode: HttpStatus.BAD_REQUEST,
+    })
+      .then(order => {
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido realizado com sucesso!' };
+        return {
+          data: {
+            user: order.user,
+            address: order.address,
+            orderItens: order.orderItens,
+            orderStatus: order.orderStatus,
+            paymentMethod: order.paymentMethod,
+            typeOfDelivery: order.typeOfDelivery,
+            total: order.total,
+            isPending: order.isPending
+          },
+          message,
+          statusCode: HttpStatus.CREATED
+        }
       })
-     });
+      .catch(() => {
+        const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao realizar pedido!' };
+        throw new ErrorExceptionFilters('BAD_REQUEST', {
+          message,
+          statusCode: HttpStatus.BAD_REQUEST,
+        })
+      });
   }
 
   private async validateOrderFields(orderDto: CreateOrderDto | UpdateOrderDto, userId: number, isUpdate = false, orderId?: number) {
     if (!TYPE_OF_DELIVERY[orderDto.typeOfDelivery]) throw new ErrorExceptionFilters('BAD_REQUEST', `Tipo de entrega: ${orderDto.typeOfDelivery} inválido!`);
-  
+
     if (!PAYMENT_METHOD[orderDto.paymentMethod]) throw new ErrorExceptionFilters('BAD_REQUEST', `Forma de pagamento: ${orderDto.paymentMethod} inválida!`);
-  
+
     if (orderDto.orderItens.length === 0) throw new ErrorExceptionFilters('BAD_REQUEST', `Pedido não pode ser realizado sem itens!`);
-  
+
     const user = await this.prismaService.user.findUnique({
       where: { idUser: userId }
     });
-  
+
     if (!user) throw new ErrorExceptionFilters('NOT_FOUND', `Este usuário não está cadastrado no sistema!`);
-  
+
     const address = await this.prismaService.address.findUnique({
       where: { idAddress: orderDto.idAddress }
     });
-  
+
     if (!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este endereço não está cadastrado no sistema!`);
-  
+
     if (address.idUser !== user.idUser) {
       throw new ErrorExceptionFilters('BAD_REQUEST', `O endereço fornecido não pertence a este usuário!`);
     }
-  
+
     if (isUpdate) {
       const order = await this.prismaService.order.findUnique({
         where: { idOrder: orderId }
       });
-  
+
       if (order?.idUser !== userId) throw new ErrorExceptionFilters('FORBIDDEN', `Este pedido não pertence a este usuário!`);
 
       if (order.orderStatus == 'ENTREGUE' || order.orderStatus == 'CANCELADO') throw new ErrorExceptionFilters('BAD_REQUEST', `Pedidos entregues ou cancelados não podem ser atualizados!`);
@@ -119,24 +119,24 @@ export class OrderService {
       const orderPending = await this.prismaService.order.findFirst({
         where: { idUser: userId, isPending: true }
       });
-  
+
       if (orderPending) throw new ErrorExceptionFilters('BAD_REQUEST', `Já existe um pedido em andamento para este usuário e não é possível realizar outro no momento!`);
     }
-  }  
+  }
 
   private async calculateTotalOrderValue(orderItens: Array<{ product: { idProduct: number }, quantity: number }>) {
     let totalValue = 0;
-  
+
     for (const item of orderItens) {
       const product = await this.prismaService.product.findUnique({
         where: { idProduct: item.product.idProduct }
       });
-  
+
       if (!product) throw new ErrorExceptionFilters('BAD_REQUEST', `Produto id: ${item.product.idProduct} não está cadastrado no sistema!`);
-  
+
       totalValue += product.price * item.quantity;
     }
-  
+
     return totalValue;
   }
 
@@ -147,77 +147,77 @@ export class OrderService {
 
     return await paginate<Order, Prisma.OrderFindManyArgs>(
       this.prismaService.order,
-      { 
+      {
         where: isPending ? { isPending: isPending } : undefined,
-        orderBy: { createdAt: isPending? 'asc' : 'desc' },
+        orderBy: { createdAt: isPending ? 'asc' : 'desc' },
         select: selectedFields
       },
       { page: page, perPage: perPage }
     )
-    .then(response => {
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedidos listados com sucesso.' };
-      return {
-        data: response.data,
-        meta: response.meta,
-        message,
-        statusCode: HttpStatus.OK
-      }
-    })
-    .catch((err) => {
-      console.log(err)
-      const message = { severity: 'error', summary: 'Erro ao listar pedidos', detail: 'Erro' };
+      .then(response => {
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedidos listados com sucesso.' };
+        return {
+          data: response.data,
+          meta: response.meta,
+          message,
+          statusCode: HttpStatus.OK
+        }
+      })
+      .catch((err) => {
+        console.log(err)
+        const message = { severity: 'error', summary: 'Erro ao listar pedidos', detail: 'Erro' };
         throw new ErrorExceptionFilters('BAD_REQUEST', {
           message,
           statusCode: HttpStatus.BAD_REQUEST,
         })
-    });
+      });
   }
 
-  async findAllOrdersByUser(userId: number, page: number, perPage: number): Promise<PaginatedOutputDto<Object>>{
-    
+  async findAllOrdersByUser(userId: number, page: number, perPage: number): Promise<PaginatedOutputDto<Object>> {
+
     const selectedFields = orderSelectFields;
 
     const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
 
     return await paginate<Order, Prisma.OrderFindManyArgs>(
       this.prismaService.order,
-      { 
-        where: { idUser: userId } ,
+      {
+        where: { idUser: userId },
         select: selectedFields,
       },
       { page: page, perPage: perPage }
     )
-    .then(response => {
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedidos listados com sucesso.' };
-      return {
-        data: response.data,
-        meta: response.meta,
-        message,
-        statusCode: HttpStatus.OK
-      }
-    })
-    .catch((err) => {
-      console.log(err)
-      const message = { severity: 'error', summary: 'Erro ao listar pedidos', detail: 'Erro' };
+      .then(response => {
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedidos listados com sucesso.' };
+        return {
+          data: response.data,
+          meta: response.meta,
+          message,
+          statusCode: HttpStatus.OK
+        }
+      })
+      .catch((err) => {
+        console.log(err)
+        const message = { severity: 'error', summary: 'Erro ao listar pedidos', detail: 'Erro' };
         throw new ErrorExceptionFilters('BAD_REQUEST', {
           message,
           statusCode: HttpStatus.BAD_REQUEST,
         })
-    });
+      });
   }
 
   async findById(id: number, userId: number) {
-    
+
     const selectedFields = orderSelectByIdFields;
-    
+
     const order = await this.prismaService.order.findUnique({
       where: { idOrder: id },
       select: selectedFields
     });
 
-    if(!order) throw new ErrorExceptionFilters('NOT_FOUND', `Este pedido não está cadastrado no sistema!`);
+    if (!order) throw new ErrorExceptionFilters('NOT_FOUND', `Este pedido não está cadastrado no sistema!`);
 
-    if(order.idUser !== userId) throw new ErrorExceptionFilters('FORBIDDEN', `Este pedido não pertence a este usuário!`);
+    if (order.idUser !== userId) throw new ErrorExceptionFilters('FORBIDDEN', `Este pedido não pertence a este usuário!`);
 
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço listado com sucesso!' };
 
@@ -231,7 +231,7 @@ export class OrderService {
         paymentMethod: order.paymentMethod,
         orderStatus: order.orderStatus,
         total: order.total
-      }, 
+      },
       message,
       statusCode: HttpStatus.OK
     }
@@ -246,9 +246,9 @@ export class OrderService {
     const orderItemsData = updateOrderDto.orderItens.map((item) => ({
       idProduct: item.product.idProduct,
       quantity: item.quantity
-     }));
+    }));
 
-     return await this.prismaService.order.update({
+    return await this.prismaService.order.update({
       where: { idOrder: id },
       data: {
         typeOfDelivery: TYPE_OF_DELIVERY[updateOrderDto.typeOfDelivery],
@@ -263,52 +263,111 @@ export class OrderService {
         address: addressSelectConfig,
         orderItens: orderItensSelectConfig
       }
-     })
-     .then(order => {
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido atualizado com sucesso!' };
-      return {
-        data: {
-          orderId: order.idOrder,
-          user: order.user,
-          address: order.address,
-          orderStatus: order.orderStatus,
-          paymentMethod: order.paymentMethod,
-          typeOfDelivery: order.typeOfDelivery,
-          orderItens: order.orderItens,
-          total: order.total,
-          isPending: order.isPending
-        },
-        message,
-        statusCode: HttpStatus.CREATED
-      }
-     })
-     .catch(() => {
-      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao atualizar pedido!' };
-      throw new ErrorExceptionFilters('BAD_REQUEST', {
-        message,
-        statusCode: HttpStatus.BAD_REQUEST,
+    })
+      .then(order => {
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido atualizado com sucesso!' };
+        return {
+          data: {
+            orderId: order.idOrder,
+            user: order.user,
+            address: order.address,
+            orderStatus: order.orderStatus,
+            paymentMethod: order.paymentMethod,
+            typeOfDelivery: order.typeOfDelivery,
+            orderItens: order.orderItens,
+            total: order.total,
+            isPending: order.isPending
+          },
+          message,
+          statusCode: HttpStatus.CREATED
+        }
       })
-     });
+      .catch(() => {
+        const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao atualizar pedido!' };
+        throw new ErrorExceptionFilters('BAD_REQUEST', {
+          message,
+          statusCode: HttpStatus.BAD_REQUEST,
+        })
+      });
   }
 
-  async updateOrderStatus(orderId: number, orderstatus: number, updateOrderDto: updateOrderDto) {
+  async validateUpdateOrderStatus(orderId: number, orderstatus: number) {
     
-    const order = this.prismaService.order.findUnique({
+    const order = await this.prismaService.order.findUnique({
       where: { idOrder: orderId }
     });
 
-    if(!order) throw new ErrorExceptionFilters('NOT_FOUND', `Este pedido não está cadastrado no sistema!`);
+    if (!order) throw new ErrorExceptionFilters('NOT_FOUND', `Este pedido não foi encontrado!`);
+    if (order.orderStatus == 'ENTREGUE') throw new ErrorExceptionFilters('BAD_REQUEST', `Pedidos entregues não podem ser alterados!`);
+    if (order.orderStatus == 'CANCELADO') throw new ErrorExceptionFilters('BAD_REQUEST', `Pedidos cancelados não podem ser alterados!`);
 
-    switch((await order).typeOfDelivery) {
+    let isPending: boolean;
+
+    switch (order.typeOfDelivery) {
       case 'ENTREGA': {
-        
+        if (!ORDER_STATUS_DELIVERY[orderstatus]) throw new ErrorExceptionFilters('BAD_REQUEST', `Status do pedido ${orderstatus} é inválido!`);
+        if (ORDER_STATUS_DELIVERY[orderstatus] == 'ENTREGUE' || ORDER_STATUS_DELIVERY[orderstatus] == 'CANCELADO') {
+          isPending = false;
+        } else {
+          isPending = true;
+        }
+
+        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_DELIVERY[orderstatus], isPending);
       }
-      break;
 
       case 'RETIRA': {
+        if (!ORDER_STATUS_WITHDRAWAL[orderstatus]) throw new ErrorExceptionFilters('BAD_REQUEST', `Status do pedido ${orderstatus} é inválido!`);
+        if (ORDER_STATUS_WITHDRAWAL[orderstatus] == 'ENTREGUE' || ORDER_STATUS_WITHDRAWAL[orderstatus] == 'CANCELADO') {
+          isPending = false;
+        } else {
+          isPending = true;
+        }
 
+        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_WITHDRAWAL[orderstatus], isPending);
       }
-      break
+
+      default: break;
     }
+  }
+
+  async updateOrderStatus(orderId: number, orderStatus: string, isPending: boolean) {
+    return await this.prismaService.order.update({
+      where: { idOrder: orderId },
+      data: {
+        orderStatus: orderStatus,
+        isPending: isPending,
+        orderStatusUpdatedAt: new Date()
+      },
+      include: {
+        user: userSelectConfig,
+        address: addressSelectConfig,
+        orderItens: orderItensSelectConfig
+      }
+    })
+      .then(order => {
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Status do pedido atualizado com sucesso!' };
+        return {
+          data: {
+            orderId: order.idOrder,
+            user: order.user,
+            address: order.address,
+            orderItens: order.orderItens,
+            orderStatus: order.orderStatus,
+            paymentMethod: order.paymentMethod,
+            typeOfDelivery: order.typeOfDelivery,
+            total: order.total,
+            isPending: order.isPending
+          },
+          message,
+          statusCode: HttpStatus.CREATED
+        }
+      })
+      .catch(() => {
+        const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao atualizar status do pedido!' };
+        throw new ErrorExceptionFilters('BAD_REQUEST', {
+          message,
+          statusCode: HttpStatus.BAD_REQUEST,
+        })
+      });
   }
 }

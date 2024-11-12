@@ -72,7 +72,7 @@ model Order {
   orderItens            OrderItem[]
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
-  orderStatusUpdatedAt  DateTime  @default(now())
+  orderStatusUpdatedAt  DateTime?
 
   @@schema("sales")
 }
