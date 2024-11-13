@@ -19,6 +19,7 @@ export class UserController {
     return this.userService.create(user);
   }
 
+  @Roles('ADMIN', 'DEV')
   @Get('all')
   @ApiPaginatedResponse(User)
   async findAll(
