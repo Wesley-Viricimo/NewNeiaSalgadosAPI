@@ -1,3 +1,5 @@
+export class User {}
+
 export const UserSide = {
     name: "nome",
     surname: "sobrenome",

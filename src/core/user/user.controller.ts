@@ -1,8 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Public } from 'src/shared/decorators/publicRoute.decorator';
+import { ApiPaginatedResponse } from 'src/shared/decorators/pagination.decorator';
+import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
+import { User } from './entities/user.entity';
+
 
 @Controller('user')
 export class UserController {
@@ -14,9 +19,13 @@ export class UserController {
     return this.userService.create(user);
   }
 
-  @Get()
-  findAll() {
-    return this.userService.findAll();
+  @Get('all')
+  @ApiPaginatedResponse(User)
+  async findAll(
+    @Query('page') page: number = 1,
+    @Query('perPage') perPage: number = 10
+  ): Promise<PaginatedOutputDto<Object>> {
+    return await this.userService.findAll(page, perPage);
   }
 
   @Get(':id')
@@ -30,7 +39,7 @@ export class UserController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
+  inativateUser(@Param('id') id: string) {
+    return this.userService.inativateUser(+id);
   }
 }

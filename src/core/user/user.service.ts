@@ -6,6 +6,10 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { UserSide } from './entities/user.entity';
 import { cpf } from 'cpf-cnpj-validator';
 import { hash } from 'bcryptjs';
+import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
+import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+import { userSelectConfig } from './config/user-select-config';
+import { Prisma, User } from '@prisma/client';
 
 @Injectable()
 export class UserService {
@@ -82,8 +86,35 @@ export class UserService {
     return user;
   }
 
-  findAll() {
-    return `This action returns all user`;
+  async findAll(page: number, perPage: number): Promise<PaginatedOutputDto<Object>> {
+    
+    const selectedFields = userSelectConfig;
+
+    const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
+
+    return await paginate<User, Prisma.UserFindManyArgs>(
+      this.prismaService.user,
+      {
+        select: selectedFields
+      },
+      { page: page, perPage: perPage }
+    )
+    .then(response => {
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedidos listados com sucesso.' };
+      return {
+        data: response.data,
+        meta: response.meta,
+        message,
+        statusCode: HttpStatus.OK
+      }
+    })
+    .catch(() => {
+      const message = { severity: 'error', summary: 'Erro ao listar usuários', detail: 'Erro' };
+      throw new ErrorExceptionFilters('BAD_REQUEST', {
+        message,
+        statusCode: HttpStatus.BAD_REQUEST,
+      })
+    });
   }
 
   findOne(id: number) {
@@ -94,7 +125,7 @@ export class UserService {
     return `This action updates a #${id} user`;
   }
 
-  remove(id: number) {
+  inativateUser(id: number) {
     return `This action removes a #${id} user`;
   }
 }

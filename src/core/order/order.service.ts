@@ -196,8 +196,7 @@ export class OrderService {
           statusCode: HttpStatus.OK
         }
       })
-      .catch((err) => {
-        console.log(err)
+      .catch(() => {
         const message = { severity: 'error', summary: 'Erro ao listar pedidos', detail: 'Erro' };
         throw new ErrorExceptionFilters('BAD_REQUEST', {
           message,
