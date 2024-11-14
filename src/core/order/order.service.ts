@@ -8,7 +8,8 @@ import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
 import { Order, Prisma } from '@prisma/client';
 import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { userSelectConfig, addressSelectConfig, orderItensSelectConfig, orderSelectFields, orderSelectByIdFields } from 'src/core/order/config/order-select-config';
-import { subMinutes, isAfter } from 'date-fns';
+import { subMinutes, isAfter, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 @Injectable()
 export class OrderService {
@@ -43,7 +44,7 @@ export class OrderService {
         },
         address: {
           connect: {
-            idAddress: userId
+            idAddress: createOrderDto.idAddress
           }
         }
       },
@@ -69,7 +70,8 @@ export class OrderService {
           statusCode: HttpStatus.CREATED
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.log(err);
         const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao realizar pedido!' };
         throw new ErrorExceptionFilters('BAD_REQUEST', {
           message,
@@ -352,7 +354,8 @@ export class OrderService {
             orderStatus: order.orderStatus,
             paymentMethod: order.paymentMethod,
             typeOfDelivery: order.typeOfDelivery,
-            total: order.total
+            total: order.total,
+            deliveryDate: order.deliveryDate? format(new Date(order.deliveryDate), "dd/MM/yyyy HH:mm", { locale: ptBR }) : ''
           },
           message,
           statusCode: HttpStatus.CREATED
