@@ -8,7 +8,7 @@ import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { Product } from './entities/product.entity';
 import { FileFastifyInterceptor } from "fastify-file-interceptor";
 
-@Controller('product')
+@Controller('api/v1/product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 

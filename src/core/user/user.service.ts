@@ -100,7 +100,7 @@ export class UserService {
       { page: page, perPage: perPage }
     )
     .then(response => {
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedidos listados com sucesso.' };
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuários listados com sucesso.' };
       return {
         data: response.data,
         meta: response.meta,

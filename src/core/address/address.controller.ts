@@ -7,7 +7,7 @@ import { UpdateAddressDto } from './dto/update-address.dto';
 import { Address } from './entities/address.entity';
 import { FastifyRequest } from 'fastify';
 
-@Controller('address')
+@Controller('api/v1/address')
 export class AddressController {
   constructor(private readonly addressService: AddressService) {}
 

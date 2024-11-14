@@ -9,7 +9,7 @@ import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { User } from './entities/user.entity';
 
 
-@Controller('user')
+@Controller('api/v1/user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

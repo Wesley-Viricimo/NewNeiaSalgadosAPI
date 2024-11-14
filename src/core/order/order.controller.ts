@@ -8,7 +8,7 @@ import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { Order } from './entities/order.entity';
 import { FastifyRequest } from 'fastify';
 
-@Controller('order')
+@Controller('api/v1/order')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 

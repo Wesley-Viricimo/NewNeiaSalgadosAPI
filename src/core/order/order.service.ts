@@ -63,8 +63,7 @@ export class OrderService {
             orderStatus: order.orderStatus,
             paymentMethod: order.paymentMethod,
             typeOfDelivery: order.typeOfDelivery,
-            total: order.total,
-            isPending: order.isPending
+            total: order.total
           },
           message,
           statusCode: HttpStatus.CREATED
@@ -117,7 +116,7 @@ export class OrderService {
       }
     } else {
       const orderPending = await this.prismaService.order.findFirst({
-        where: { idUser: userId, isPending: true }
+        where: { idUser: userId, deliveryDate: null }
       });
 
       if (orderPending) throw new ErrorExceptionFilters('BAD_REQUEST', `Já existe um pedido em andamento para este usuário e não é possível realizar outro no momento!`);
@@ -148,7 +147,7 @@ export class OrderService {
     return await paginate<Order, Prisma.OrderFindManyArgs>(
       this.prismaService.order,
       {
-        where: isPending ? { isPending: isPending } : undefined,
+        where: isPending ? { deliveryDate: null } : undefined,
         orderBy: { createdAt: isPending ? 'asc' : 'desc' },
         select: selectedFields
       },
@@ -274,8 +273,7 @@ export class OrderService {
             paymentMethod: order.paymentMethod,
             typeOfDelivery: order.typeOfDelivery,
             orderItens: order.orderItens,
-            total: order.total,
-            isPending: order.isPending
+            total: order.total
           },
           message,
           statusCode: HttpStatus.CREATED
@@ -334,7 +332,7 @@ export class OrderService {
       where: { idOrder: orderId },
       data: {
         orderStatus: orderStatus,
-        isPending: isPending,
+        deliveryDate: !isPending ? new Date() : null,
         orderStatusUpdatedAt: new Date()
       },
       include: {
@@ -354,8 +352,7 @@ export class OrderService {
             orderStatus: order.orderStatus,
             paymentMethod: order.paymentMethod,
             typeOfDelivery: order.typeOfDelivery,
-            total: order.total,
-            isPending: order.isPending
+            total: order.total
           },
           message,
           statusCode: HttpStatus.CREATED
