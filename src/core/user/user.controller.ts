@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, HttpCode, Query, HttpStatus } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -7,6 +7,7 @@ import { ApiPaginatedResponse } from 'src/shared/decorators/pagination.decorator
 import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { User } from './entities/user.entity';
+import { ChangeUserStatusDTO } from './dto/user-status.dto';
 
 
 @Controller('api/v1/user')
@@ -15,6 +16,7 @@ export class UserController {
 
   @Public()
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() user: CreateUserDto) {
     return this.userService.create(user);
   }
@@ -36,12 +38,15 @@ export class UserController {
   }
 
   @Patch(':id')
+  @HttpCode(HttpStatus.CREATED)
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(+id, updateUserDto);
   }
 
-  @Delete(':id')
-  inativateUser(@Param('id') id: string) {
-    return this.userService.inativateUser(+id);
+  @Roles('ADMIN', 'DEV')
+  @Patch('changeUserActivity/:id')
+  @HttpCode(HttpStatus.CREATED)
+  changeUserActivity(@Param('id') id: string, @Body() changeUserStatusDTO: ChangeUserStatusDTO) {
+    return this.userService.changeUserActivity(+id, changeUserStatusDTO);
   }
 }

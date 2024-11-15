@@ -10,6 +10,7 @@ import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
 import { userSelectConfig } from './config/user-select-config';
 import { Prisma, User } from '@prisma/client';
+import { ChangeUserStatusDTO } from './dto/user-status.dto';
 
 @Injectable()
 export class UserService {
@@ -146,7 +147,36 @@ export class UserService {
     return `This action updates a #${id} user`;
   }
 
-  inativateUser(id: number) {
-    return `This action removes a #${id} user`;
-  }
+  async changeUserActivity(id: number, changeUserStatusDTO: ChangeUserStatusDTO) {
+    
+    const user = await this.prismaService.user.findUnique({
+      where: { idUser: id }
+    });
+  
+    if (!user) throw new ErrorExceptionFilters('NOT_FOUND', `Este usuário não está cadastrado no sistema!`);
+  
+    const selectedFields = userSelectConfig;
+  
+    return await this.prismaService.user.update({
+      where: { idUser: id },
+      data: { isActive: changeUserStatusDTO.isActive },
+      select: selectedFields
+    })
+    .then(result => {
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Atividade do usuário atualizada com sucesso!' };
+      return {
+        data: result,
+        message,
+        statusCode: HttpStatus.CREATED
+      };
+    })
+    .catch((err) => {
+      console.log(err);
+      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao atualizar atividade do usuário!' };
+      throw new ErrorExceptionFilters('BAD_REQUEST', {
+        message,
+        statusCode: HttpStatus.BAD_REQUEST,
+      });
+    });
+  }  
 }
