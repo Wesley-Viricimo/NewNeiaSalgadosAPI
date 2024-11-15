@@ -117,8 +117,29 @@ export class UserService {
     });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findById(id: number) {
+
+    const user = await this.prismaService.user.findUnique({
+      where: { idUser: id }
+    });
+
+    if(!user) throw new ErrorExceptionFilters('NOT_FOUND', `Este usuário não está cadastrado no sistema!`);
+
+    const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuário listado com sucesso!' };
+   
+    return {
+      data: {
+        idUser: user.idUser,
+        name: user.name,
+        surname: user.surname,
+        cpf: user.cpf,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive
+      },
+      message,
+      statusCode: HttpStatus.OK
+    }
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {

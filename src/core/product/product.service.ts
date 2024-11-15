@@ -94,11 +94,8 @@ export class ProductService {
 
   async findById(id: number) {
 
-    const selectedFields = productSelectConfig;
-
     const product = await this.prismaService.product.findUnique({
-      where: { idProduct: id },
-      select: selectedFields
+      where: { idProduct: id }
     });
 
     if(!product) throw new ErrorExceptionFilters('NOT_FOUND', `Este produto não está cadastrado no sistema!`);

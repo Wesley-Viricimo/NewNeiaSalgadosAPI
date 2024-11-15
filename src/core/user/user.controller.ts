@@ -29,9 +29,10 @@ export class UserController {
     return await this.userService.findAll(page, perPage);
   }
 
+  @Roles('ADMIN', 'DEV')
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(+id);
+  findById(@Param('id') id: string) {
+    return this.userService.findById(+id);
   }
 
   @Patch(':id')
