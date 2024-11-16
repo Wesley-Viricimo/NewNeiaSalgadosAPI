@@ -21,7 +21,7 @@ export class UserService {
   
   async create(user: CreateUserDto) {
 
-    await this.validateFieldsUser(user);
+    await this.validateFieldsCreateUser(user);
     
       const passwordHash = await hash(user.password, 8);
 
@@ -61,11 +61,11 @@ export class UserService {
       });
   }
 
-  private async validateFieldsUser(user: CreateUserDto) {
+  private async validateFieldsCreateUser(user: CreateUserDto) {
+    if(user.cpf.length > 11) throw new ErrorExceptionFilters('BAD_REQUEST', `${UserSide['cpf']} não pode exceder 11 caracteres!`);
     if(!cpf.isValid(user.cpf)) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} não é válido!`);
-
     const cpfExists = await this.findUserByCpf(user.cpf);
-    if(cpfExists) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} já está cadastrado no sistema!`);
+    if(cpfExists) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} já está cadastrado no sistema!`);   
 
     const emailExists = await this.findUserByEmail(user.email);
     if(emailExists) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['email']} já está cadastrado no sistema!`);
@@ -143,8 +143,69 @@ export class UserService {
     }
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(updateUserDto: UpdateUserDto, userId: number) {
+    
+    await this.validateFieldsUpdateUser(updateUserDto, userId);
+  
+    let passwordHash: string;
+
+    if (updateUserDto.password) {
+      passwordHash = await hash(updateUserDto.password, 8);
+    }
+  
+    const updateUserData: any = {
+      name: updateUserDto.name,
+      surname: updateUserDto.surname,
+      cpf: updateUserDto.cpf,
+      email: updateUserDto.email,
+    };
+  
+    if (passwordHash) {
+      updateUserData.password = passwordHash;
+    }
+  
+    return await this.prismaService.user.update({
+      where: { idUser: userId },
+      data: updateUserData,
+    })
+    .then(user => {
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuário atualizado com sucesso!' };
+      return {
+        data: {
+          idUser: user.idUser,
+          name: user.name,
+          surname: user.surname,
+          cpf: user.cpf,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive
+        },
+        message,
+        statusCode: HttpStatus.OK
+      }
+    })
+    .catch(() => {
+      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao atualizar usuário!' };
+        throw new ErrorExceptionFilters('BAD_REQUEST', {
+          message,
+          statusCode: HttpStatus.BAD_REQUEST,
+        })
+    })
+  }
+
+  private async validateFieldsUpdateUser(user: UpdateUserDto, userId: number) {
+    if(user.cpf) {
+      if(user.cpf.length > 11) throw new ErrorExceptionFilters('BAD_REQUEST', `${UserSide['cpf']} não pode exceder 11 caracteres!`);
+      if(!cpf.isValid(user.cpf)) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} não é válido!`);
+
+      const cpfExists = await this.findUserByCpf(user.cpf);
+      if(cpfExists && cpfExists.idUser !== userId) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} já está cadastrado no sistema!`);
+    }    
+
+    if(user.email) {
+      const emailExists = await this.findUserByEmail(user.email);
+      if(emailExists && emailExists.idUser !==userId) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['email']} já está cadastrado no sistema!`);
+    }
   }
 
   async changeUserActivity(id: number, changeUserStatusDTO: ChangeUserStatusDTO) {

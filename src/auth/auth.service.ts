@@ -31,8 +31,15 @@ export class AuthService {
       if(user && compareHash) {
         const payload = this.createPayload(user);
         
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuário autenticado com sucesso!' };
+
         return { 
-          token: await this.tokenService.createToken(payload), 
+          data: {
+            userId: user.idUser,
+            email: user.email,
+            token: await this.tokenService.createToken(payload)
+          },
+          message,
           status: HttpStatus.CREATED
         };
       } else {

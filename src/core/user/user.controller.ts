@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, HttpCode, Query, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, HttpCode, Query, HttpStatus, Req } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -8,6 +8,7 @@ import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { User } from './entities/user.entity';
 import { ChangeUserStatusDTO } from './dto/user-status.dto';
+import { FastifyRequest } from 'fastify';
 
 
 @Controller('api/v1/user')
@@ -37,10 +38,10 @@ export class UserController {
     return this.userService.findById(+id);
   }
 
-  @Patch(':id')
+  @Patch()
   @HttpCode(HttpStatus.CREATED)
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(+id, updateUserDto);
+  update(@Body() updateUserDto: UpdateUserDto, @Req() request: FastifyRequest) {
+    return this.userService.update(updateUserDto, request['userId'] );
   }
 
   @Roles('ADMIN', 'DEV')
