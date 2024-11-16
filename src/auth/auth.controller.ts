@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Query, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/AuthDto';
 import { Public } from 'src/shared/decorators/publicRoute.decorator';
@@ -11,5 +11,11 @@ export class AuthController {
   @Post()
   create(@Body() user: AuthDto) {
     return this.authService.auth(user);
+  }
+
+  @Public()
+  @Get('confirm-email')
+  confirmationEmail(@Query('token') token: string) {
+    console.log('rota acessada', token)
   }
 }
