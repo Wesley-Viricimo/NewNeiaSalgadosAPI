@@ -3,13 +3,15 @@ import { ProductService } from './product.service';
 import { ProductController } from './product.controller';
 import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 
 @Module({
   controllers: [ProductController],
   providers: [
     ProductService,
     ErrorExceptionFilters,
-    PrismaService
+    PrismaService,
+    ExceptionHandler
   ],
 })
 export class ProductModule {}

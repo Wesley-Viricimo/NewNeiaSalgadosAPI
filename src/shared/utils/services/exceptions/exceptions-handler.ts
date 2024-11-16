@@ -8,7 +8,7 @@ export class ExceptionHandler {
     const message = this.responseMessage('error', 'Erro', detail)
     throw new ErrorExceptionFilters('UNAUTHORIZED', {
       message,
-      statusCode: HttpStatus.UNAUTHORIZED,
+      statusCode: HttpStatus.UNAUTHORIZED
     });
   }
 
@@ -16,7 +16,7 @@ export class ExceptionHandler {
     const message = this.responseMessage('error', 'Erro', detail);
     throw new ErrorExceptionFilters('BAD_REQUEST', {
       message,
-      statusCode: HttpStatus.BAD_REQUEST,
+      statusCode: HttpStatus.BAD_REQUEST
     });
   }
 
@@ -24,7 +24,15 @@ export class ExceptionHandler {
     const message = this.responseMessage('error', 'Erro', detail);
     throw new ErrorExceptionFilters('NOT_FOUND', {
       message,
-      statusCode: HttpStatus.NOT_FOUND,
+      statusCode: HttpStatus.NOT_FOUND
+    });
+  }
+
+  errorUnsupportedMediaTypeResponse(detail: string) {
+    const message = this.responseMessage('error', 'Erro', detail);
+    throw new ErrorExceptionFilters('UNSUPPORTED_MEDIA_TYPE', {
+      message,
+      statusCode: HttpStatus.UNSUPPORTED_MEDIA_TYPE
     });
   }
 
@@ -32,7 +40,7 @@ export class ExceptionHandler {
     const message = this.responseMessage('error', 'Erro', detail);
     throw new ErrorExceptionFilters('FORBIDDEN', {
       message,
-      statusCode: HttpStatus.FORBIDDEN,
+      statusCode: HttpStatus.FORBIDDEN
     });
   }
 
