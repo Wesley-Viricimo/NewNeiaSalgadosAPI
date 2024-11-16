@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Query, HttpCode
 import { AddressService } from './address.service';
 import { ApiPaginatedResponse } from 'src/shared/decorators/pagination.decorator';
 import { CreateAddressDto } from './dto/create-address.dto';
-import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { Address } from './entities/address.entity';
 import { FastifyRequest } from 'fastify';

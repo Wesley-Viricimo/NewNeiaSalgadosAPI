@@ -7,7 +7,7 @@ import { ViaCepService } from 'src/shared/utils/Api/viacep.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { AddressSide } from './entities/address.entity';
 import { Address, Prisma } from '@prisma/client';
-import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { userSelectConfig, addressByIdSelectConfig, addressSelectConfig } from './config/address-select-config';
 
 @Injectable()

@@ -4,7 +4,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Public } from 'src/shared/decorators/publicRoute.decorator';
 import { ApiPaginatedResponse } from 'src/shared/decorators/pagination.decorator';
-import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { User } from './entities/user.entity';
 import { ChangeUserStatusDTO } from './dto/user-status.dto';

@@ -4,7 +4,7 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
 import { PAYMENT_METHOD, TYPE_OF_DELIVERY, ORDER_STATUS_DELIVERY, ORDER_STATUS_WITHDRAWAL } from './constants/order.constants';
-import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Order, Prisma } from '@prisma/client';
 import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { userSelectConfig, addressSelectConfig, orderItensSelectConfig, orderSelectFields, orderSelectByIdFields } from 'src/core/order/config/order-select-config';

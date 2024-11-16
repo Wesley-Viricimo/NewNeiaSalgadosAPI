@@ -7,7 +7,7 @@ import { UserSide } from './entities/user.entity';
 import { cpf } from 'cpf-cnpj-validator';
 import { hash } from 'bcryptjs';
 import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
-import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { userSelectConfig } from './config/user-select-config';
 import { Prisma, User } from '@prisma/client';
 import { ChangeUserStatusDTO } from './dto/user-status.dto';

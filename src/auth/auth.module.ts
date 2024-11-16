@@ -6,6 +6,7 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { UserService } from 'src/core/user/user.service';
 import { TokenService } from './token/token.service';
 import { EmailService } from 'src/shared/utils/aws/send-email.service';
+import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 
 @Module({
   controllers: [AuthController],
@@ -15,7 +16,8 @@ import { EmailService } from 'src/shared/utils/aws/send-email.service';
     PrismaService,
     UserService,
     TokenService,
-    EmailService
+    EmailService,
+    ExceptionHandler
   ],
 })
 export class AuthModule {}

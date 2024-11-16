@@ -3,7 +3,7 @@ import { AuthDto } from './dto/AuthDto';
 import { UserService } from 'src/core/user/user.service';
 import { compare } from 'bcryptjs';
 import { TokenService } from './token/token.service';
-import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
+import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 
 interface TokenAuthPayload {
   idUser: number,
@@ -16,16 +16,17 @@ interface TokenAuthPayload {
 export class AuthService {
   constructor(
     private readonly userService: UserService,
-    private readonly tokenService: TokenService<TokenAuthPayload>
+    private readonly tokenService: TokenService<TokenAuthPayload>,
+    private readonly exceptionHandler: ExceptionHandler
   ){}
 
   async auth(auth: AuthDto) {
     const { email, password } = auth;
     const user = await this.userService.findUserByEmail(email);
 
-    if(!user) this.autenticationFailedResponse();
+    if(!user) this.exceptionHandler.errorUnauthorizedResponse('Nome de usuário ou senha incorretos. Verifique e tente novamente.');
 
-    if(!user.isActive) throw new ErrorExceptionFilters('UNAUTHORIZED', `Este usuário está inativo!`);
+    if(!user.isActive) this.exceptionHandler.errorUnauthorizedResponse('Este usuário está inativo');
       
     const compareHash = await compare(password, user.password);
 
@@ -44,7 +45,7 @@ export class AuthService {
         status: HttpStatus.CREATED
       };
     } else {
-      this.autenticationFailedResponse();
+      this.exceptionHandler.errorUnauthorizedResponse('Nome de usuário ou senha incorretos. Verifique e tente novamente.');
     }
   }
 
@@ -57,11 +58,4 @@ export class AuthService {
     }
   }
 
-  private autenticationFailedResponse() {
-    const message = { severity: 'error', summary: 'Erro', detail: 'Nome de usuário ou senha incorretos. Verifique e tente novamente.' };
-      throw new ErrorExceptionFilters('UNAUTHORIZED', {
-        message,
-        statusCode: HttpStatus.UNAUTHORIZED,
-      });
-  }
 }

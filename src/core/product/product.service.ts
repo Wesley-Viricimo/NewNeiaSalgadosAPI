@@ -5,7 +5,7 @@ import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseSer
 import { ProductSide } from './entities/product.entity';
 import { PaginatorTypes, paginator } from '@nodeteam/nestjs-prisma-pagination';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Prisma, Product } from '@prisma/client';
 import { productSelectConfig } from './config/product-select-config';
 
