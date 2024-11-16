@@ -12,16 +12,15 @@ import { userSelectConfig } from './config/user-select-config';
 import { Prisma, User } from '@prisma/client';
 import { ChangeUserStatusDTO } from './dto/user-status.dto';
 import { EmailService } from 'src/shared/utils/aws/send-email.service';
+import { MailConfirmation } from './dto/mail-confirmation.dto';
 
 @Injectable()
 export class UserService {
-  private emailService: EmailService;
 
   constructor(
-    private readonly prismaService: PrismaService  
-  ) {
-    this.emailService = new EmailService();
-  }
+    private readonly prismaService: PrismaService,
+    private readonly emailService: EmailService
+  ) {}
   
   async create(user: CreateUserDto) {
 
@@ -77,7 +76,7 @@ export class UserService {
   }
 
   private generateActivationCode(): string {
-    return Math.random().toString(36).substring(2, 7).toUpperCase(); // Gera código de 5 caracteres alfanuméricos em maiúsculas
+    return Math.random().toString(36).substring(2, 7).toUpperCase();
   }
 
   private async validateFieldsCreateUser(user: CreateUserDto) {
@@ -224,6 +223,69 @@ export class UserService {
     if(user.email) {
       const emailExists = await this.findUserByEmail(user.email);
       if(emailExists && emailExists.idUser !==userId) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['email']} já está cadastrado no sistema!`);
+    }
+  }
+
+  async confirmationCode(mailConfirmation: MailConfirmation) {
+
+    const user = await this.prismaService.user.findFirst({
+      where: { email: mailConfirmation.email }
+    });
+
+    if(!user) throw new ErrorExceptionFilters('NOT_FOUND', `Este usuário não está cadastrado no sistema!`);
+
+    const confirmationCode = await this.prismaService.userActivationCode.findUnique({
+      where: { idUser: user.idUser }
+    });
+
+    const userConfirmationSelectConfig = {
+      select: {
+        confirmed: true
+      }
+    }
+
+    if(confirmationCode) {
+      if(confirmationCode.confirmed) throw new ErrorExceptionFilters('NOT_FOUND', `Esta conta já foi ativa!`);
+
+      if(confirmationCode.code !== mailConfirmation.code.toUpperCase()) throw new ErrorExceptionFilters('NOT_FOUND', `Este código de ativação está incorreto!`);
+
+      await this.prismaService.userActivationCode.update({
+        where: { idCode: confirmationCode.idCode },
+        data: { confirmed: true }
+      });
+
+      return await this.prismaService.user.update({
+        where: { idUser: user.idUser },
+        data: {
+          isActive: true
+        },
+        include: {
+          userActivationCode: userConfirmationSelectConfig
+        }
+      })
+      .then(user => {
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Conta ativada com sucesso!' };
+        return {
+          data: {
+            name: user.name,
+            surname: user.surname,
+            cpf: user.cpf,
+            email: user.email,
+            role: user.role,
+            isActive: user.isActive,
+            userActivationCode: user.userActivationCode
+        },
+        message,
+        statusCode: HttpStatus.OK
+        }
+      })
+      .catch(() => {
+        const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao ativar conta!' };
+        throw new ErrorExceptionFilters('BAD_REQUEST', {
+          message,
+          statusCode: HttpStatus.BAD_REQUEST,
+        })
+      });
     }
   }
 

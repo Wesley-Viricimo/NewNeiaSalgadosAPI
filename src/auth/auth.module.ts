@@ -5,6 +5,7 @@ import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseSer
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { UserService } from 'src/core/user/user.service';
 import { TokenService } from './token/token.service';
+import { EmailService } from 'src/shared/utils/aws/send-email.service';
 
 @Module({
   controllers: [AuthController],
@@ -13,7 +14,8 @@ import { TokenService } from './token/token.service';
     ErrorExceptionFilters,
     PrismaService,
     UserService,
-    TokenService
+    TokenService,
+    EmailService
   ],
 })
 export class AuthModule {}
