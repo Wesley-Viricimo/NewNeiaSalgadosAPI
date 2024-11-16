@@ -5,7 +5,7 @@ import { compare } from 'bcryptjs';
 import { TokenService } from './token/token.service';
 import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
 
-interface TokenAuthPayload{
+interface TokenAuthPayload {
   idUser: number,
   email: string,
   isActive: boolean,

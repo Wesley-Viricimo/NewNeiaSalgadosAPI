@@ -17,9 +17,10 @@ model User {
   cpf       String          @unique() @db.VarChar(11)
   phone     String
   email     String          @unique()
-  role      String          @default("CLIENTE")
-  isActive  Boolean         @default(true)
   password  String
+  role      String          @default("CLIENTE")
+  isActive  Boolean         @default(false)
+  confirmed Boolean         @default(false)
   address   Address[]
   order     Order[]
   createdAt DateTime        @default(now())

@@ -11,13 +11,26 @@ import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
 import { userSelectConfig } from './config/user-select-config';
 import { Prisma, User } from '@prisma/client';
 import { ChangeUserStatusDTO } from './dto/user-status.dto';
+import { EmailService } from 'src/shared/utils/aws/send-email.service';
+import { TokenService } from 'src/auth/token/token.service';
+
+interface TokenAuthPayload {
+  idUser: number,
+  email: string,
+  isActive: boolean,
+  role: string
+}
 
 @Injectable()
 export class UserService {
+  private emailService: EmailService;
 
   constructor(
-    private readonly prismaService: PrismaService
-  ) {}
+    private readonly prismaService: PrismaService,
+    private readonly tokenService: TokenService<TokenAuthPayload>
+  ) {
+    this.emailService = new EmailService();
+  }
   
   async create(user: CreateUserDto) {
 
@@ -35,7 +48,8 @@ export class UserService {
           password: passwordHash
         },
       })
-      .then(user => {
+      .then(async (user) => {
+        await this.sendConfirmationEmail(user);
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuário cadastrado com sucesso!' };
         return {
           data: {
@@ -59,6 +73,21 @@ export class UserService {
           statusCode: HttpStatus.BAD_REQUEST,
         })
       });
+  }
+
+  private async sendConfirmationEmail(user: User) {
+    const payload = this.createPayload(user);
+    const token = await this.tokenService.createToken(payload)
+    await this.emailService.sendEmail(user.email, user.name, token)
+  }
+
+  private createPayload(user: User): TokenAuthPayload {
+    return {
+      idUser: user.idUser,
+      email: user.email,
+      isActive: user.isActive,
+      role: user.role
+    }
   }
 
   private async validateFieldsCreateUser(user: CreateUserDto) {
