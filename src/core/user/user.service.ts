@@ -12,22 +12,13 @@ import { userSelectConfig } from './config/user-select-config';
 import { Prisma, User } from '@prisma/client';
 import { ChangeUserStatusDTO } from './dto/user-status.dto';
 import { EmailService } from 'src/shared/utils/aws/send-email.service';
-import { TokenService } from 'src/auth/token/token.service';
-
-interface TokenAuthPayload {
-  idUser: number,
-  email: string,
-  isActive: boolean,
-  role: string
-}
 
 @Injectable()
 export class UserService {
   private emailService: EmailService;
 
   constructor(
-    private readonly prismaService: PrismaService,
-    private readonly tokenService: TokenService<TokenAuthPayload>
+    private readonly prismaService: PrismaService  
   ) {
     this.emailService = new EmailService();
   }
@@ -49,7 +40,17 @@ export class UserService {
         },
       })
       .then(async (user) => {
-        await this.sendConfirmationEmail(user);
+        const activationCode = this.generateActivationCode();
+
+        await this.prismaService.userActivationCode.create({
+          data: {
+            code: activationCode,
+            idUser: user.idUser
+          }
+        });
+
+        await this.emailService.sendEmail(user.email, user.name, activationCode);
+        
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuário cadastrado com sucesso!' };
         return {
           data: {
@@ -59,8 +60,7 @@ export class UserService {
             phone: user.phone,
             email: user.email,
             role: user.role,
-            isActive: user.isActive,
-            confirmed: user.confirmed
+            isActive: user.isActive
           },
           message,
           statusCode: HttpStatus.CREATED
@@ -76,19 +76,8 @@ export class UserService {
       });
   }
 
-  private async sendConfirmationEmail(user: User) {
-    const payload = this.createPayload(user);
-    const token = await this.tokenService.createToken(payload)
-    await this.emailService.sendEmail(user.email, user.name, token)
-  }
-
-  private createPayload(user: User): TokenAuthPayload {
-    return {
-      idUser: user.idUser,
-      email: user.email,
-      isActive: user.isActive,
-      role: user.role
-    }
+  private generateActivationCode(): string {
+    return Math.random().toString(36).substring(2, 7).toUpperCase(); // Gera código de 5 caracteres alfanuméricos em maiúsculas
   }
 
   private async validateFieldsCreateUser(user: CreateUserDto) {

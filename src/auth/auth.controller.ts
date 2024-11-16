@@ -1,7 +1,8 @@
-import { Controller, Post, Body, Query, Get } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/AuthDto';
 import { Public } from 'src/shared/decorators/publicRoute.decorator';
+import { MailConfirmation } from './dto/MailConfirmationDto';
 
 @Controller('api/v1/auth')
 export class AuthController {
@@ -14,8 +15,8 @@ export class AuthController {
   }
 
   @Public()
-  @Get('confirm-email')
-  confirmationEmail(@Query('token') token: string) {
-    console.log('rota acessada', token)
+  @Post('confirm-code')
+  confirmationCode(@Body() mailConfirmation: MailConfirmation) {
+    return this.authService.confirmationCode(mailConfirmation);
   }
 }
