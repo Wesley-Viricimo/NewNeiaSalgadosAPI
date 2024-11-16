@@ -1,7 +1,6 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { UserSide } from './entities/user.entity';
 import { cpf } from 'cpf-cnpj-validator';
@@ -13,13 +12,15 @@ import { Prisma, User } from '@prisma/client';
 import { ChangeUserStatusDTO } from './dto/user-status.dto';
 import { EmailService } from 'src/shared/utils/aws/send-email.service';
 import { MailConfirmation } from './dto/mail-confirmation.dto';
+import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 
 @Injectable()
 export class UserService {
 
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly exceptionHandler: ExceptionHandler
   ) {}
   
   async create(user: CreateUserDto) {
@@ -65,13 +66,8 @@ export class UserService {
           statusCode: HttpStatus.CREATED
         };
       })
-      .catch((err) => {
-        console.log(err)
-        const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao cadastrar usuário!' };
-        throw new ErrorExceptionFilters('BAD_REQUEST', {
-          message,
-          statusCode: HttpStatus.BAD_REQUEST,
-        })
+      .catch(() => {
+        this.exceptionHandler.errorBadRequestResponse('Erro ao cadastrar usuário!');
       });
   }
 
@@ -80,13 +76,13 @@ export class UserService {
   }
 
   private async validateFieldsCreateUser(user: CreateUserDto) {
-    if(user.cpf.length > 11) throw new ErrorExceptionFilters('BAD_REQUEST', `${UserSide['cpf']} não pode exceder 11 caracteres!`);
-    if(!cpf.isValid(user.cpf)) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} não é válido!`);
+    if(user.cpf.length > 11) this.exceptionHandler.errorBadRequestResponse(`${UserSide['cpf']} não pode exceder 11 caracteres!`);
+    if(!cpf.isValid(user.cpf)) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['cpf']} não é válido!`);
     const cpfExists = await this.findUserByCpf(user.cpf);
-    if(cpfExists) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} já está cadastrado no sistema!`);   
+    if(cpfExists) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['cpf']} já está cadastrado no sistema!`);  
 
     const emailExists = await this.findUserByEmail(user.email);
-    if(emailExists) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['email']} já está cadastrado no sistema!`);
+    if(emailExists) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['email']} já está cadastrado no sistema!`);
   }
 
   async findUserByEmail(email: string) {
@@ -126,13 +122,6 @@ export class UserService {
         message,
         statusCode: HttpStatus.OK
       }
-    })
-    .catch(() => {
-      const message = { severity: 'error', summary: 'Erro ao listar usuários', detail: 'Erro' };
-      throw new ErrorExceptionFilters('BAD_REQUEST', {
-        message,
-        statusCode: HttpStatus.BAD_REQUEST,
-      })
     });
   }
 
@@ -142,7 +131,7 @@ export class UserService {
       where: { idUser: id }
     });
 
-    if(!user) throw new ErrorExceptionFilters('NOT_FOUND', `Este usuário não está cadastrado no sistema!`);
+    if(!user) this.exceptionHandler.errorNotFoundResponse('Este usuário não está cadastrado no sistema!');
 
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuário listado com sucesso!' };
    
@@ -203,26 +192,22 @@ export class UserService {
       }
     })
     .catch(() => {
-      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao atualizar usuário!' };
-        throw new ErrorExceptionFilters('BAD_REQUEST', {
-          message,
-          statusCode: HttpStatus.BAD_REQUEST,
-        })
+      this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar usuário!');
     })
   }
 
   private async validateFieldsUpdateUser(user: UpdateUserDto, userId: number) {
     if(user.cpf) {
-      if(user.cpf.length > 11) throw new ErrorExceptionFilters('BAD_REQUEST', `${UserSide['cpf']} não pode exceder 11 caracteres!`);
-      if(!cpf.isValid(user.cpf)) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} não é válido!`);
+      if(user.cpf.length > 11) this.exceptionHandler.errorBadRequestResponse(`${UserSide['cpf']} não pode exceder 11 caracteres!`);
+      if(!cpf.isValid(user.cpf)) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['cpf']} não é válido!`);
 
       const cpfExists = await this.findUserByCpf(user.cpf);
-      if(cpfExists && cpfExists.idUser !== userId) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['cpf']} já está cadastrado no sistema!`);
+      if(cpfExists && cpfExists.idUser !== userId) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['cpf']} já está cadastrado no sistema!`);
     }    
 
     if(user.email) {
       const emailExists = await this.findUserByEmail(user.email);
-      if(emailExists && emailExists.idUser !==userId) throw new ErrorExceptionFilters('BAD_REQUEST', `Este ${UserSide['email']} já está cadastrado no sistema!`);
+      if(emailExists && emailExists.idUser !==userId) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['email']} já está cadastrado no sistema!`);
     }
   }
 
@@ -232,7 +217,7 @@ export class UserService {
       where: { email: mailConfirmation.email }
     });
 
-    if(!user) throw new ErrorExceptionFilters('NOT_FOUND', `Este usuário não está cadastrado no sistema!`);
+    if(!user) this.exceptionHandler.errorNotFoundResponse('Este usuário não está cadastrado no sistema!');
 
     const confirmationCode = await this.prismaService.userActivationCode.findUnique({
       where: { idUser: user.idUser }
@@ -245,9 +230,9 @@ export class UserService {
     }
 
     if(confirmationCode) {
-      if(confirmationCode.confirmed) throw new ErrorExceptionFilters('NOT_FOUND', `Esta conta já foi ativa!`);
+      if(confirmationCode.confirmed) this.exceptionHandler.errorBadRequestResponse('Esta conta já foi ativa');
 
-      if(confirmationCode.code !== mailConfirmation.code.toUpperCase()) throw new ErrorExceptionFilters('NOT_FOUND', `Este código de ativação está incorreto!`);
+      if(confirmationCode.code !== mailConfirmation.code.toUpperCase()) this.exceptionHandler.errorBadRequestResponse('Este código de ativação está incorreto!');
 
       await this.prismaService.userActivationCode.update({
         where: { idCode: confirmationCode.idCode },
@@ -280,11 +265,7 @@ export class UserService {
         }
       })
       .catch(() => {
-        const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao ativar conta!' };
-        throw new ErrorExceptionFilters('BAD_REQUEST', {
-          message,
-          statusCode: HttpStatus.BAD_REQUEST,
-        })
+        this.exceptionHandler.errorBadRequestResponse('Erro ao ativar conta!');
       });
     }
   }
@@ -295,7 +276,7 @@ export class UserService {
       where: { idUser: id }
     });
   
-    if (!user) throw new ErrorExceptionFilters('NOT_FOUND', `Este usuário não está cadastrado no sistema!`);
+    if (!user) this.exceptionHandler.errorNotFoundResponse('Este usuário não está cadastrado no sistema!');
   
     const selectedFields = userSelectConfig;
   
@@ -312,13 +293,8 @@ export class UserService {
         statusCode: HttpStatus.CREATED
       };
     })
-    .catch((err) => {
-      console.log(err);
-      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao atualizar atividade do usuário!' };
-      throw new ErrorExceptionFilters('BAD_REQUEST', {
-        message,
-        statusCode: HttpStatus.BAD_REQUEST,
-      });
+    .catch(() => {
+      this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar atividade do usuário!');
     });
   }  
 }

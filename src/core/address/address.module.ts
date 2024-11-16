@@ -4,6 +4,7 @@ import { AddressController } from './address.controller';
 import { ViaCepService } from 'src/shared/utils/Api/viacep.service';
 import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 import { HttpModule } from '@nestjs/axios';
 
 @Module({
@@ -13,7 +14,8 @@ import { HttpModule } from '@nestjs/axios';
     AddressService,
     ViaCepService,
     ErrorExceptionFilters,
-    PrismaService
+    PrismaService,
+    ExceptionHandler
   ],
 })
 export class AddressModule {}
