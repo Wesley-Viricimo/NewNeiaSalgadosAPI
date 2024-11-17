@@ -5,7 +5,7 @@ import { ErrorExceptionFilters } from "../httpResponseService/errorResponse.serv
 export class ExceptionHandler {
 
   errorUnauthorizedResponse(detail: string) {
-    const message = this.responseErrorMessage(detail)
+    const message = this.responseErrorMessage('Unauthorized', detail)
     throw new ErrorExceptionFilters('UNAUTHORIZED', {
       message,
       statusCode: HttpStatus.UNAUTHORIZED
@@ -13,7 +13,7 @@ export class ExceptionHandler {
   }
 
   errorBadRequestResponse(detail: string) {
-    const message = this.responseErrorMessage(detail);
+    const message = this.responseErrorMessage('Erro', detail);
     throw new ErrorExceptionFilters('BAD_REQUEST', {
       message,
       statusCode: HttpStatus.BAD_REQUEST
@@ -21,7 +21,7 @@ export class ExceptionHandler {
   }
 
   errorNotFoundResponse(detail: string) {
-    const message = this.responseErrorMessage(detail);
+    const message = this.responseErrorMessage('Not Found', detail);
     throw new ErrorExceptionFilters('NOT_FOUND', {
       message,
       statusCode: HttpStatus.NOT_FOUND
@@ -29,7 +29,7 @@ export class ExceptionHandler {
   }
 
   errorUnsupportedMediaTypeResponse(detail: string) {
-    const message = this.responseErrorMessage(detail);
+    const message = this.responseErrorMessage('Unsupported Media Type', detail);
     throw new ErrorExceptionFilters('UNSUPPORTED_MEDIA_TYPE', {
       message,
       statusCode: HttpStatus.UNSUPPORTED_MEDIA_TYPE
@@ -37,17 +37,17 @@ export class ExceptionHandler {
   }
 
   errorForbiddenResponse(detail: string) {
-    const message = this.responseErrorMessage(detail);
+    const message = this.responseErrorMessage('Unauthorized', detail);
     throw new ErrorExceptionFilters('FORBIDDEN', {
       message,
       statusCode: HttpStatus.FORBIDDEN
     });
   }
 
-  private responseErrorMessage(detail: string) {
+  private responseErrorMessage(summary: string, detail: string) {
     return {
       severity: 'error',
-      summary: 'Erro',
+      summary: summary,
       detail
     }
   }

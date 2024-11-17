@@ -1,10 +1,10 @@
-import { CanActivate, ExecutionContext, Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { verify } from 'jsonwebtoken';
 import { PrismaService } from '../prisma/prisma.service';
 import { ROLES_KEY } from '../decorators/rolesPermission.decorator';
-import { ErrorExceptionFilters } from '../utils/services/httpResponseService/errorResponse.service';
 import { FastifyRequest } from 'fastify';
+import { ExceptionHandler } from '../utils/services/exceptions/exceptions-handler';
 
 interface UserInfo {
   idUser: number,
@@ -23,6 +23,7 @@ export class AuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly prismaService: PrismaService,
+    private readonly exceptionHandler: ExceptionHandler
   ) {}
   
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -42,18 +43,15 @@ export class AuthGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (requiredRoles && !requiredRoles.includes(requestInfo.role)) {
-      this.unauthorizedUserResponse();
-    }
+    if (requiredRoles && !requiredRoles.includes(requestInfo.role)) this.exceptionHandler.errorUnauthorizedResponse('Este usuário não tem permissão para acessar este recurso!');
 
     const userInfo = await this.prismaService.user.findUnique({
       where: { idUser: requestInfo.idUser }
     });
 
-    if (!userInfo) throw new HttpException('Usuário não está cadastrado no sistema!', HttpStatus.NOT_FOUND);
+    if (!userInfo) this.exceptionHandler.errorNotFoundResponse('Usuário não está cadastrado no sistema!');
 
-    if(!userInfo.isActive)
-      this.inativeUserResponse();
+    if(!userInfo.isActive) this.exceptionHandler.errorUnauthorizedResponse('Este usuário está inativo!');
 
     return true;
   }
@@ -63,7 +61,7 @@ export class AuthGuard implements CanActivate {
     const authorizationHeader = request.headers.authorization as string;
 
     if(!authorizationHeader)
-      this.requiredTokenResponse();
+      this.exceptionHandler.errorUnauthorizedResponse('Token é requerido!');
 
     try {
       const response = {} as UserInfo;
@@ -79,39 +77,7 @@ export class AuthGuard implements CanActivate {
 
       return response;
     } catch (err) {
-      this.invalidToken();
+      this.exceptionHandler.errorUnauthorizedResponse('Token inválido!');
     } 
-  }
-
-  private unauthorizedUserResponse() {
-    const message = { severity: 'error', summary: 'Forbidden', detail: 'Este usuário não tem permissão para acessar este recurso!' };
-    throw new ErrorExceptionFilters('FORBIDDEN', {
-      message,
-      statusCode: HttpStatus.FORBIDDEN,
-    });
-  }
-
-  private requiredTokenResponse() {
-    const message = { severity: 'error', summary: 'Forbidden', detail: 'Token é requerido!' };
-    throw new ErrorExceptionFilters('UNAUTHORIZED', {
-      message,
-      statusCode: HttpStatus.UNAUTHORIZED,
-    });
-  }
-
-  private invalidToken() {
-    const message = { severity: 'error', summary: 'Error', detail: 'Token inválido!' };
-    throw new ErrorExceptionFilters('INTERNAL_SERVER_ERROR', {
-      message,
-      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-    });
-  }
-
-  private inativeUserResponse() {
-    const message = { severity: 'error', summary: 'Unauthorized', detail: 'Este usuário está inativo!' };
-      throw new ErrorExceptionFilters('UNAUTHORIZED', {
-        message: message,
-        statusCode: HttpStatus.UNAUTHORIZED
-      });
   }
 }
