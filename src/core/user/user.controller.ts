@@ -29,8 +29,17 @@ export class UserController {
     @Query('page') page: number = 1,
     @Query('perPage') perPage: number = 10
   ): Promise<PaginatedOutputDto<Object>> {
-    return await this.userService.findAll(page, perPage);
+    return await this.userService.findAll(page, perPage, false);
   }
+
+  @Roles('ADMIN', 'DEV')
+  @Get('inative')
+  async findInativeUsers(
+    @Query('page') page: number = 1,
+    @Query('perPage') perPage: number = 10
+  ): Promise<PaginatedOutputDto<Object>> {
+    return await this.userService.findAll(page, perPage, true)
+  } 
 
   @Roles('ADMIN', 'DEV')
   @Get(':id')

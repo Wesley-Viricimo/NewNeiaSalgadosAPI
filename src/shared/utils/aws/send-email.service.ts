@@ -3,19 +3,21 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class EmailService {
-    private sesClient: SESClient;
+  private static sesClient: SESClient;
 
     constructor() {
-        this.sesClient = new SESClient({
-            region: process.env.AWS_REGION,
-            credentials: {
-                accessKeyId: process.env.AWS_ACCESS_KEY,
-                secretAccessKey: process.env.AWS_SECRET_KEY
-            }
+      if (!EmailService.sesClient) {
+        EmailService.sesClient = new SESClient({
+          region: process.env.AWS_REGION,
+          credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY,
+            secretAccessKey: process.env.AWS_SECRET_KEY,
+          },
         });
+      }
     }
 
-    async sendEmail(email: string, name: string, activationCode: string): Promise<void> {
+    async sendActivateAccountEmail(email: string, name: string, activationCode: string): Promise<void> {
         const plainTextMessage = `Olá, ${name}!\n\nSeu código de ativação é: ${activationCode}\n\nUse este código para ativar sua conta.\n\nAtenciosamente,\nEquipe Neia Salgados`;
       
         const htmlMessage = `
@@ -57,8 +59,7 @@ export class EmailService {
         const command = new SendEmailCommand(params);
       
         try {
-          await this.sesClient.send(command);
-          console.log(`Email enviado com sucesso para: ${email}`);
+          await EmailService.sesClient.send(command);
         } catch (error) {
           console.error('Erro ao enviar e-mail:', error);
           throw new Error('Erro ao enviar e-mail');

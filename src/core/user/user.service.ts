@@ -49,7 +49,7 @@ export class UserService {
           }
         });
 
-        await this.emailService.sendEmail(user.email, user.name, activationCode);
+        await this.emailService.sendActivateAccountEmail(user.email, user.name, activationCode);
         
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuário cadastrado com sucesso!' };
         return {
@@ -101,7 +101,7 @@ export class UserService {
     return user;
   }
 
-  async findAll(page: number, perPage: number): Promise<PaginatedOutputDto<Object>> {
+  async findAll(page: number, perPage: number, inativeUsers: boolean): Promise<PaginatedOutputDto<Object>> {
     
     const selectedFields = userSelectConfig;
 
@@ -110,6 +110,7 @@ export class UserService {
     return await paginate<User, Prisma.UserFindManyArgs>(
       this.prismaService.user,
       {
+        where: inativeUsers ? { isActive: false } : undefined, 
         select: selectedFields
       },
       { page: page, perPage: perPage }
