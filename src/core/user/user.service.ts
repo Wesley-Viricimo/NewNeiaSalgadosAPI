@@ -13,6 +13,7 @@ import { ChangeUserStatusDTO } from './dto/user-status.dto';
 import { EmailService } from 'src/shared/utils/aws/send-email.service';
 import { MailConfirmation } from './dto/mail-confirmation.dto';
 import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
+import { ROLES } from './constants/users.constants';
 
 @Injectable()
 export class UserService {
@@ -49,7 +50,7 @@ export class UserService {
           }
         });
 
-        await this.emailService.sendActivateAccountEmail(user.email, user.name, activationCode);
+        //await this.emailService.sendActivateAccountEmail(user.email, user.name, activationCode);
         
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuário cadastrado com sucesso!' };
         return {
@@ -210,6 +211,44 @@ export class UserService {
       const emailExists = await this.findUserByEmail(user.email);
       if(emailExists && emailExists.idUser !==userId) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['email']} já está cadastrado no sistema!`);
     }
+  }
+
+  async updateUserRole(userId: number, role: string) {
+
+    console.log(role);
+    console.log('user id', userId);
+
+    if(!ROLES[role]) this.exceptionHandler.errorBadRequestResponse(`Não existe a função com o id: ${role}`);
+
+    const user = await this.prismaService.user.findUnique({
+      where: { idUser: userId }
+    });
+
+    if(!user) this.exceptionHandler.errorBadRequestResponse('Este usuário não está cadastrado no sistema!');
+
+    return await this.prismaService.user.update({
+      where: { idUser: user.idUser },
+      data: { role: ROLES[role] }
+    })
+    .then(user => {
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Função do usuário atualizada com sucesso!' };
+      return {
+        data: {
+          idUser: user.idUser,
+          name: user.name,
+          surname: user.surname,
+          cpf: user.cpf,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive
+        },
+        message,
+        statusCode: HttpStatus.CREATED
+      }
+    })
+    .catch(() => {
+      this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar função do usuário!')
+    })
   }
 
   async confirmationCode(mailConfirmation: MailConfirmation) {

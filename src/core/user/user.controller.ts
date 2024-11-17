@@ -53,8 +53,17 @@ export class UserController {
     return this.userService.update(updateUserDto, request['userId'] );
   }
 
+  @Roles('DEV')
+  @Patch(':id/role/:role')
+  async updateUserRole(
+    @Param('id') id: string,
+    @Param('role') role: string 
+  ) {
+    return await this.userService.updateUserRole(+id, role);
+  }
+
   @Public()
-  @Post('confirm-code')
+  @Patch('confirm-code')
   confirmationCode(@Body() mailConfirmation: MailConfirmation) {
     return this.userService.confirmationCode(mailConfirmation);
   }
