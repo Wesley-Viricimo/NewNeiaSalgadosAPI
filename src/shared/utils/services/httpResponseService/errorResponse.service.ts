@@ -9,7 +9,6 @@ import {
   UnauthorizedException,
   UnsupportedMediaTypeException
 } from '@nestjs/common';
-import { FORBIDDEN_MESSAGE } from '@nestjs/core/guards';
 
 const createErrorFunction = (
   ExceptionClass: new (message?: string) => HttpException,

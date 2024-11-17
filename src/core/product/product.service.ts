@@ -1,19 +1,20 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
 import { ProductSide } from './entities/product.entity';
 import { PaginatorTypes, paginator } from '@nodeteam/nestjs-prisma-pagination';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Prisma, Product } from '@prisma/client';
 import { productSelectConfig } from './config/product-select-config';
+import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 
 @Injectable()
 export class ProductService {
 
   constructor(
-    private readonly prismaService: PrismaService
+    private readonly prismaService: PrismaService,
+    private readonly exceptionHandler: ExceptionHandler
   ) {}
 
   async create(createProductDto: CreateProductDto, file: Express.Multer.File) {
@@ -35,32 +36,23 @@ export class ProductService {
         statusCode: HttpStatus.CREATED
       };
     })
-    .catch((err) => {
-      console.log(err);
-      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao cadastrar produto!' };
-      throw new ErrorExceptionFilters('BAD_REQUEST', {
-        message,
-        statusCode: HttpStatus.BAD_REQUEST,
-      })
+    .catch(() => {
+      this.exceptionHandler.errorBadRequestResponse('Erro ao cadastrar produto!');
     });
   }
 
   private async validateFieldsProduct(createProductDto: CreateProductDto, file: Express.Multer.File) {
     if(file) 
-      if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) throw new ErrorExceptionFilters('UNSUPPORTED_MEDIA_TYPE', `A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
+      if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
 
-    if(isNaN(Number(createProductDto.price))) throw new ErrorExceptionFilters('BAD_REQUEST', `O preço do produto deve ser um valor numérico!`);
+    if(isNaN(Number(createProductDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
 
     const existsProduct = await this.prismaService.product.findUnique({
       where: { description: createProductDto.description }
     });
 
     if(existsProduct) {
-      const message = { severity: 'error', summary: 'Erro', detail: 'Produto já cadastrado!' };
-      return {
-        message,
-        statusCode: HttpStatus.BAD_REQUEST,
-      }
+      this.exceptionHandler.errorBadRequestResponse('Produto já cadastrado!');
     }
   }
 
@@ -82,23 +74,16 @@ export class ProductService {
         message,
         statusCode: HttpStatus.OK
       }
-    })
-    .catch(() => {
-      const message = { severity: 'error', summary: 'Erro ao listar produtos', detail: 'Erro' };
-      throw new ErrorExceptionFilters('BAD_REQUEST', {
-        message,
-        statusCode: HttpStatus.BAD_REQUEST,
-      })
-  });
+    });
   }
 
   async findById(id: number) {
 
     const product = await this.prismaService.product.findUnique({
       where: { idProduct: id }
-    });
+    }); 
 
-    if(!product) throw new ErrorExceptionFilters('NOT_FOUND', `Este produto não está cadastrado no sistema!`);
+    if(!product) this.exceptionHandler.errorNotFoundResponse('Este produto não está cadastrado no sistema!');
 
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto listado com sucesso!' };
 
@@ -122,7 +107,7 @@ export class ProductService {
       where: { idProduct: id }
     });
     
-    if(!product) throw new ErrorExceptionFilters('NOT_FOUND', `Este produto não está cadastrado no sistema!`);
+    if(!product) this.exceptionHandler.errorNotFoundResponse('Este produto não está cadastrado no sistema!');
 
     return await this.prismaService.product.update({
       where: { idProduct: id },
@@ -146,32 +131,23 @@ export class ProductService {
         statusCode: HttpStatus.CREATED
       }
     })
-    .catch((err) => {
-      console.log(err)
-      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao atualizar produto!' };
-        throw new ErrorExceptionFilters('BAD_REQUEST', {
-          message,
-          statusCode: HttpStatus.BAD_REQUEST
-        })
+    .catch(() => {
+      this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar produto!');
     });
   }
 
   private async validateFieldsUpdateProduct(createProductDto: UpdateProductDto, file: Express.Multer.File) {
     if(file) 
-      if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) throw new ErrorExceptionFilters('UNSUPPORTED_MEDIA_TYPE', `A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
+      if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG, JPEG ou PNG!`);
 
-    if(isNaN(Number(createProductDto.price))) throw new ErrorExceptionFilters('BAD_REQUEST', `O preço do produto deve ser um valor numérico!`);
+    if(isNaN(Number(createProductDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
 
     const existsProduct = await this.prismaService.product.findUnique({
       where: { description: createProductDto.description }
     });
 
     if(existsProduct) {
-      const message = { severity: 'error', summary: 'Erro', detail: 'Produto já cadastrado!' };
-      return {
-        message,
-        statusCode: HttpStatus.BAD_REQUEST,
-      }
+      this.exceptionHandler.errorBadRequestResponse(`Este produto já foi cadastrado!`);
     }
   }
 
@@ -180,17 +156,13 @@ export class ProductService {
       where: { idProduct: id }
     });
 
-    if(!product) throw new ErrorExceptionFilters('NOT_FOUND', `Este produto não está cadastrado no sistema!`);
+    if(!product) this.exceptionHandler.errorNotFoundResponse(`Este produto não está cadastrado no sistema!`);
 
     return await this.prismaService.product.delete({
       where: { idProduct: id }
     })
     .catch(() => {
-      const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao excluir produto!' };
-      throw new ErrorExceptionFilters('BAD_REQUEST', {
-        message,
-        statusCode: HttpStatus.BAD_REQUEST
-      });
+      this.exceptionHandler.errorBadRequestResponse('Erro ao excluir produto!');
     });
   }
 }

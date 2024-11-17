@@ -2,19 +2,20 @@ import { Injectable, HttpStatus } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
 import { PAYMENT_METHOD, TYPE_OF_DELIVERY, ORDER_STATUS_DELIVERY, ORDER_STATUS_WITHDRAWAL } from './constants/order.constants';
-import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Order, Prisma } from '@prisma/client';
 import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { userSelectConfig, addressSelectConfig, orderItensSelectConfig, orderSelectFields, orderSelectByIdFields } from 'src/core/order/config/order-select-config';
 import { subMinutes, isAfter, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 
 @Injectable()
 export class OrderService {
   constructor(
-    private readonly prismaService: PrismaService
+    private readonly prismaService: PrismaService,
+    private readonly exceptionHandler: ExceptionHandler
   ) { }
 
   async create(createOrderDto: CreateOrderDto, userId: number) {
@@ -70,58 +71,52 @@ export class OrderService {
           statusCode: HttpStatus.CREATED
         }
       })
-      .catch((err) => {
-        console.log(err);
-        const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao realizar pedido!' };
-        throw new ErrorExceptionFilters('BAD_REQUEST', {
-          message,
-          statusCode: HttpStatus.BAD_REQUEST,
-        })
+      .catch(() => {
+        this.exceptionHandler.errorBadRequestResponse('Erro ao realizar pedido!');
       });
   }
 
   private async validateOrderFields(orderDto: CreateOrderDto | UpdateOrderDto, userId: number, isUpdate = false, orderId?: number) {
-    if (!TYPE_OF_DELIVERY[orderDto.typeOfDelivery]) throw new ErrorExceptionFilters('BAD_REQUEST', `Tipo de entrega: ${orderDto.typeOfDelivery} inválido!`);
+    if (!TYPE_OF_DELIVERY[orderDto.typeOfDelivery]) this.exceptionHandler.errorBadRequestResponse(`Tipo de entrega: ${orderDto.typeOfDelivery} inválido!`);
 
-    if (!PAYMENT_METHOD[orderDto.paymentMethod]) throw new ErrorExceptionFilters('BAD_REQUEST', `Forma de pagamento: ${orderDto.paymentMethod} inválida!`);
+    if (!PAYMENT_METHOD[orderDto.paymentMethod]) this.exceptionHandler.errorBadRequestResponse(`Forma de pagamento: ${orderDto.paymentMethod} inválida!`);
 
-    if (orderDto.orderItens.length === 0) throw new ErrorExceptionFilters('BAD_REQUEST', `Pedido não pode ser realizado sem itens!`);
+    if (orderDto.orderItens.length === 0) this.exceptionHandler.errorBadRequestResponse(`Pedido não pode ser realizado sem itens!`);
 
     const user = await this.prismaService.user.findUnique({
       where: { idUser: userId }
     });
 
-    if (!user) throw new ErrorExceptionFilters('NOT_FOUND', `Este usuário não está cadastrado no sistema!`);
+    if (!user) this.exceptionHandler.errorNotFoundResponse(`Este usuário não está cadastrado no sistema!`);
 
     const address = await this.prismaService.address.findUnique({
       where: { idAddress: orderDto.idAddress }
     });
 
-    if (!address) throw new ErrorExceptionFilters('NOT_FOUND', `Este endereço não está cadastrado no sistema!`);
+    if (!address) this.exceptionHandler.errorNotFoundResponse(`Este endereço não está cadastrado no sistema!`);
 
-    if (address.idUser !== user.idUser) {
-      throw new ErrorExceptionFilters('BAD_REQUEST', `O endereço fornecido não pertence a este usuário!`);
-    }
+    if (address.idUser !== user.idUser) this.exceptionHandler.errorBadRequestResponse(`O endereço fornecido não pertence a este usuário!`);
 
     if (isUpdate) {
       const order = await this.prismaService.order.findUnique({
         where: { idOrder: orderId }
       });
 
-      if (order?.idUser !== userId) throw new ErrorExceptionFilters('FORBIDDEN', `Este pedido não pertence a este usuário!`);
+      if (order?.idUser !== userId) this.exceptionHandler.errorForbiddenResponse(`Este pedido não pertence a este usuário!`);
 
-      if (order.orderStatus == 'ENTREGUE' || order.orderStatus == 'CANCELADO') throw new ErrorExceptionFilters('BAD_REQUEST', `Pedidos entregues ou cancelados não podem ser atualizados!`);
+      if (order.orderStatus == 'ENTREGUE' || order.orderStatus == 'CANCELADO') this.exceptionHandler.errorBadRequestResponse(`Pedidos entregues ou cancelados não podem ser atualizados!`);
 
       if (order.orderStatus == 'PREPARANDO') {
         const tenMinutesAgo = subMinutes(new Date(), 10);
-        if (isAfter(tenMinutesAgo, order.orderStatusUpdatedAt)) throw new ErrorExceptionFilters('BAD_REQUEST', `Pedidos pendentes só podem ser atualizados até 10 minutos após a última atualização!`);
+
+        if (isAfter(tenMinutesAgo, order.orderStatusUpdatedAt)) this.exceptionHandler.errorBadRequestResponse(`Pedidos pendentes só podem ser atualizados até 10 minutos após a última atualização!`);
       }
     } else {
       const orderPending = await this.prismaService.order.findFirst({
         where: { idUser: userId, deliveryDate: null }
       });
 
-      if (orderPending) throw new ErrorExceptionFilters('BAD_REQUEST', `Já existe um pedido em andamento para este usuário e não é possível realizar outro no momento!`);
+      if (orderPending) this.exceptionHandler.errorBadRequestResponse(`Já existe um pedido em andamento para este usuário e não é possível realizar outro no momento!`);
     }
   }
 
@@ -133,7 +128,7 @@ export class OrderService {
         where: { idProduct: item.product.idProduct }
       });
 
-      if (!product) throw new ErrorExceptionFilters('BAD_REQUEST', `Produto id: ${item.product.idProduct} não está cadastrado no sistema!`);
+      if (!product) this.exceptionHandler.errorBadRequestResponse(`Produto id: ${item.product.idProduct} não está cadastrado no sistema!`);
 
       totalValue += product.price * item.quantity;
     }
@@ -163,14 +158,6 @@ export class OrderService {
           message,
           statusCode: HttpStatus.OK
         }
-      })
-      .catch((err) => {
-        console.log(err)
-        const message = { severity: 'error', summary: 'Erro ao listar pedidos', detail: 'Erro' };
-        throw new ErrorExceptionFilters('BAD_REQUEST', {
-          message,
-          statusCode: HttpStatus.BAD_REQUEST,
-        })
       });
   }
 
@@ -196,13 +183,6 @@ export class OrderService {
           message,
           statusCode: HttpStatus.OK
         }
-      })
-      .catch(() => {
-        const message = { severity: 'error', summary: 'Erro ao listar pedidos', detail: 'Erro' };
-        throw new ErrorExceptionFilters('BAD_REQUEST', {
-          message,
-          statusCode: HttpStatus.BAD_REQUEST,
-        })
       });
   }
 
@@ -215,9 +195,9 @@ export class OrderService {
       select: selectedFields
     });
 
-    if (!order) throw new ErrorExceptionFilters('NOT_FOUND', `Este pedido não está cadastrado no sistema!`);
+    if (!order) this.exceptionHandler.errorNotFoundResponse(`Este pedido não está cadastrado no sistema!`);
 
-    if (order.idUser !== userId) throw new ErrorExceptionFilters('FORBIDDEN', `Este pedido não pertence a este usuário!`);
+    if (order.idUser !== userId) this.exceptionHandler.errorForbiddenResponse(`Este pedido não pertence a este usuário!`);
 
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço listado com sucesso!' };
 
@@ -282,11 +262,7 @@ export class OrderService {
         }
       })
       .catch(() => {
-        const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao atualizar pedido!' };
-        throw new ErrorExceptionFilters('BAD_REQUEST', {
-          message,
-          statusCode: HttpStatus.BAD_REQUEST,
-        })
+        this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar pedido!');
       });
   }
 
@@ -296,15 +272,15 @@ export class OrderService {
       where: { idOrder: orderId }
     });
 
-    if (!order) throw new ErrorExceptionFilters('NOT_FOUND', `Este pedido não foi encontrado!`);
-    if (order.orderStatus == 'ENTREGUE') throw new ErrorExceptionFilters('BAD_REQUEST', `Pedidos entregues não podem ser alterados!`);
-    if (order.orderStatus == 'CANCELADO') throw new ErrorExceptionFilters('BAD_REQUEST', `Pedidos cancelados não podem ser alterados!`);
+    if (!order) this.exceptionHandler.errorNotFoundResponse(`Este pedido não foi encontrado!`);
+    if (order.orderStatus == 'ENTREGUE') this.exceptionHandler.errorBadRequestResponse(`Pedidos entregues não podem ser alterados!`);
+    if (order.orderStatus == 'CANCELADO') this.exceptionHandler.errorBadRequestResponse(`Pedidos cancelados não podem ser alterados!`);
 
     let isPending: boolean;
 
     switch (order.typeOfDelivery) {
       case 'ENTREGA': {
-        if (!ORDER_STATUS_DELIVERY[orderstatus]) throw new ErrorExceptionFilters('BAD_REQUEST', `Status do pedido ${orderstatus} é inválido!`);
+        if (!ORDER_STATUS_DELIVERY[orderstatus]) this.exceptionHandler.errorBadRequestResponse(`Status do pedido ${orderstatus} é inválido!`);
         if (ORDER_STATUS_DELIVERY[orderstatus] == 'ENTREGUE' || ORDER_STATUS_DELIVERY[orderstatus] == 'CANCELADO') {
           isPending = false;
         } else {
@@ -315,7 +291,7 @@ export class OrderService {
       }
 
       case 'RETIRA': {
-        if (!ORDER_STATUS_WITHDRAWAL[orderstatus]) throw new ErrorExceptionFilters('BAD_REQUEST', `Status do pedido ${orderstatus} é inválido!`);
+        if (!ORDER_STATUS_WITHDRAWAL[orderstatus]) this.exceptionHandler.errorBadRequestResponse(`Status do pedido ${orderstatus} é inválido!`);
         if (ORDER_STATUS_WITHDRAWAL[orderstatus] == 'ENTREGUE' || ORDER_STATUS_WITHDRAWAL[orderstatus] == 'CANCELADO') {
           isPending = false;
         } else {
@@ -362,11 +338,7 @@ export class OrderService {
         }
       })
       .catch(() => {
-        const message = { severity: 'error', summary: 'Erro', detail: 'Erro ao atualizar status do pedido!' };
-        throw new ErrorExceptionFilters('BAD_REQUEST', {
-          message,
-          statusCode: HttpStatus.BAD_REQUEST,
-        })
+        this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar status do pedido!');
       });
   }
 }

@@ -11,20 +11,30 @@ datasource db {
 }
 
 model User {
-  idUser    Int             @default(autoincrement()) @id
-  name      String 
-  surname   String
-  cpf       String          @unique() @db.VarChar(11)
-  phone     String
-  email     String          @unique()
-  role      String          @default("CLIENTE")
-  isActive  Boolean         @default(true)
-  password  String
-  address   Address[]
-  order     Order[]
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt 
+  idUser              Int                 @default(autoincrement()) @id
+  name                String 
+  surname             String
+  cpf                 String              @unique() @db.VarChar(11)
+  phone               String
+  email               String              @unique()
+  password            String
+  role                String              @default("CLIENTE")
+  isActive            Boolean             @default(false)
+  address             Address[]
+  order               Order[]
+  userActivationCode  UserActivationCode? @relation("UserToActivationCode")  
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt 
 
+  @@schema("sales")
+}
+
+model UserActivationCode {
+  idCode    Int                           @default(autoincrement()) @id
+  idUser    Int                           @unique()
+  code      String                        @db.Char(5)
+  confirmed Boolean                       @default(false)
+  user      User                          @relation("UserToActivationCode", fields: [idUser], references: [idUser], onDelete: Cascade, onUpdate: Cascade)
   @@schema("sales")
 }
 

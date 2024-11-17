@@ -4,12 +4,12 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Public } from 'src/shared/decorators/publicRoute.decorator';
 import { ApiPaginatedResponse } from 'src/shared/decorators/pagination.decorator';
-import { PaginatedOutputDto } from 'src/shared/dto/paginatedOutput.dto';
+import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { User } from './entities/user.entity';
 import { ChangeUserStatusDTO } from './dto/user-status.dto';
 import { FastifyRequest } from 'fastify';
-
+import { MailConfirmation } from './dto/mail-confirmation.dto';
 
 @Controller('api/v1/user')
 export class UserController {
@@ -42,6 +42,12 @@ export class UserController {
   @HttpCode(HttpStatus.CREATED)
   update(@Body() updateUserDto: UpdateUserDto, @Req() request: FastifyRequest) {
     return this.userService.update(updateUserDto, request['userId'] );
+  }
+
+  @Public()
+  @Post('confirm-code')
+  confirmationCode(@Body() mailConfirmation: MailConfirmation) {
+    return this.userService.confirmationCode(mailConfirmation);
   }
 
   @Roles('ADMIN', 'DEV')
