@@ -8,24 +8,31 @@ import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Prisma, Product } from '@prisma/client';
 import { productSelectConfig } from './config/product-select-config';
 import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
+import { S3Service } from 'src/shared/utils/aws/upload-fileS3.service';
 
 @Injectable()
 export class ProductService {
 
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly exceptionHandler: ExceptionHandler
+    private readonly exceptionHandler: ExceptionHandler,
+    private readonly s3Service: S3Service
   ) {}
 
   async create(createProductDto: CreateProductDto, file: Express.Multer.File) {
 
     await this.validateFieldsProduct(createProductDto, file);
+
+    let urlImage: string | null = null;
+
+    if(file)
+      urlImage = await this.s3Service.uploadFile(file);
     
     return await this.prismaService.product.create({
       data: {
         description: createProductDto.description,
         price: Number(createProductDto.price),
-        urlImage: file? file.originalname : null
+        urlImage
       }
     })
     .then(result => {
