@@ -8,7 +8,7 @@ import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Prisma, Product } from '@prisma/client';
 import { productSelectConfig } from './config/product-select-config';
 import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
-import { S3Service } from 'src/shared/utils/aws/upload-fileS3.service';
+import { S3Service } from 'src/shared/utils/aws/handle-fileS3.service';
 
 @Injectable()
 export class ProductService {
@@ -21,7 +21,7 @@ export class ProductService {
 
   async create(createProductDto: CreateProductDto, file: Express.Multer.File) {
 
-    await this.validateFieldsProduct(createProductDto, file);
+    await this.validateFieldsCreateProduct(createProductDto, file);
 
     let urlImage: string | null = null;
 
@@ -48,7 +48,7 @@ export class ProductService {
     });
   }
 
-  private async validateFieldsProduct(createProductDto: CreateProductDto, file: Express.Multer.File) {
+  private async validateFieldsCreateProduct(createProductDto: CreateProductDto, file: Express.Multer.File) {
     if(file) 
       if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
 
@@ -113,8 +113,19 @@ export class ProductService {
     const product = await this.prismaService.product.findUnique({
       where: { idProduct: id }
     });
+
+    await this.validateExistsProduct(product, updateProductDto);
     
     if(!product) this.exceptionHandler.errorNotFoundResponse('Este produto não está cadastrado no sistema!');
+
+    let urlImage: string | null = product.urlImage;
+
+    if(file) {
+      if(product.urlImage) {
+        await this.s3Service.deleteFile(product.urlImage);
+      }
+      urlImage = await this.s3Service.uploadFile(file);
+    }
 
     return await this.prismaService.product.update({
       where: { idProduct: id },
@@ -122,7 +133,7 @@ export class ProductService {
         idProduct: id,
         description: updateProductDto.description,
         price: Number(updateProductDto.price),
-        urlImage: file? file.originalname : updateProductDto.urlImage
+        urlImage: urlImage
       }
     })
     .then(product => {
@@ -143,17 +154,19 @@ export class ProductService {
     });
   }
 
-  private async validateFieldsUpdateProduct(createProductDto: UpdateProductDto, file: Express.Multer.File) {
+  private async validateFieldsUpdateProduct(updateProductDto: UpdateProductDto, file: Express.Multer.File) {
     if(file) 
       if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG, JPEG ou PNG!`);
 
-    if(isNaN(Number(createProductDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
+    if(isNaN(Number(updateProductDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
+  }
 
+  private async validateExistsProduct(product: Product, updateProductDto: UpdateProductDto) {
     const existsProduct = await this.prismaService.product.findUnique({
-      where: { description: createProductDto.description }
+      where: { description: updateProductDto.description }
     });
 
-    if(existsProduct) {
+    if(existsProduct && (product.idProduct !== existsProduct.idProduct)) {
       this.exceptionHandler.errorBadRequestResponse(`Este produto já foi cadastrado!`);
     }
   }
@@ -164,6 +177,9 @@ export class ProductService {
     });
 
     if(!product) this.exceptionHandler.errorNotFoundResponse(`Este produto não está cadastrado no sistema!`);
+
+    if(product.urlImage) 
+      await this.s3Service.deleteFile(product.urlImage);
 
     return await this.prismaService.product.delete({
       where: { idProduct: id }
