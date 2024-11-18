@@ -50,7 +50,7 @@ export class UserService {
           }
         });
 
-        //await this.emailService.sendActivateAccountEmail(user.email, user.name, activationCode);
+        await this.emailService.sendActivateAccountEmail(user.email, user.name, activationCode);
         
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuário cadastrado com sucesso!' };
         return {
@@ -270,7 +270,7 @@ export class UserService {
     }
 
     if(confirmationCode) {
-      if(confirmationCode.confirmed) this.exceptionHandler.errorBadRequestResponse('Esta conta já foi ativa');
+      if(confirmationCode.confirmed) this.exceptionHandler.errorBadRequestResponse('Esta conta já foi ativa!');
 
       if(confirmationCode.code !== mailConfirmation.code.toUpperCase()) this.exceptionHandler.errorBadRequestResponse('Este código de ativação está incorreto!');
 

@@ -15,7 +15,7 @@ export class ProductController {
   @Roles('ADMIN', 'DEV')
   @HttpCode(HttpStatus.CREATED)
   @Post()
-  @UseInterceptors(FileFastifyInterceptor('imagem-produto'))
+  @UseInterceptors(FileFastifyInterceptor('product-image'))
   create(@Body() createProductDto: CreateProductDto, @UploadedFile() file: Express.Multer.File) {
     return this.productService.create(createProductDto, file);
   }
@@ -37,7 +37,7 @@ export class ProductController {
   @Roles('ADMIN', 'DEV')
   @HttpCode(HttpStatus.CREATED)
   @Patch(':id')
-  @UseInterceptors(FileFastifyInterceptor('imagem-produto'))
+  @UseInterceptors(FileFastifyInterceptor('product-image'))
   update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto, @UploadedFile() file: Express.Multer.File) {
     return this.productService.update(+id, updateProductDto, file);
   }
