@@ -39,6 +39,7 @@ export class AuthService {
         data: {
           userId: user.idUser,
           name: user.name,
+          role: user.role,
           token: await this.tokenService.createToken(payload)
         },
         message,
