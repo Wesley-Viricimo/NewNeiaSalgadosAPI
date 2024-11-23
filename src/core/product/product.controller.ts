@@ -25,8 +25,9 @@ export class ProductController {
   async findAll(
     @Query('page') page: number = 1,
     @Query('perPage') perPage: number = 10,
+    @Query('title') title: string
   ): Promise<PaginatedOutputDto<Object>> {
-    return await this.productService.findAll(page, perPage);
+    return await this.productService.findAll(page, perPage, title);
   }
 
   @Get(':id')

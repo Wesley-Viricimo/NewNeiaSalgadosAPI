@@ -63,7 +63,7 @@ export class ProductService {
     }
   }
 
-  async findAll(page: number, perPage: number): Promise<PaginatedOutputDto<Object>> {
+  async findAll(page: number, perPage: number, title: string): Promise<PaginatedOutputDto<Object>> {
 
     const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
 
@@ -71,7 +71,10 @@ export class ProductService {
 
     return await paginate<Product, Prisma.ProductFindManyArgs>(
       this.prismaService.product,
-      { select: selectedFields }
+      {
+        where: title ? { description: { contains: title, mode: 'insensitive' } } : undefined,
+        select: selectedFields 
+      }
     )
     .then(response => {
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Produtos listados com sucesso.' };
