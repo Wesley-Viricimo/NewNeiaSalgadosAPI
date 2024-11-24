@@ -34,7 +34,6 @@ export class ProductController {
   findById(@Param('id') id: string) {
     return this.productService.findById(+id);
   }
-  
 
   @Roles('ADMIN', 'DEV')
   @HttpCode(HttpStatus.CREATED)
