@@ -72,7 +72,7 @@ export class ProductService {
     return await paginate<Product, Prisma.ProductFindManyArgs>(
       this.prismaService.product,
       {
-        where: title ? { description: { contains: title, mode: 'insensitive' } } : undefined,
+        where:  { description: { contains: title, mode: 'insensitive' } },
         select: selectedFields 
       }
     )
