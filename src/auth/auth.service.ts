@@ -38,7 +38,7 @@ export class AuthService {
       return { 
         data: {
           userId: user.idUser,
-          name: user.name,
+          name: `${user.name} ${user.surname}`,
           role: user.role,
           token: await this.tokenService.createToken(payload)
         },
