@@ -6,6 +6,9 @@ export class CreateProductDto {
 
     @IsNotEmpty({ message: "O campo preço não pode ser vazio!" })
     price: number; 
+
+    @IsNotEmpty({ message: "O id da categoria não pode ser vazio!" })
+    idCategory: number;
       
     urlImage: string
 }

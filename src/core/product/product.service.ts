@@ -32,6 +32,7 @@ export class ProductService {
       data: {
         description: createProductDto.description,
         price: Number(createProductDto.price),
+        idCategory: createProductDto.idCategory,
         urlImage
       }
     })
@@ -100,6 +101,7 @@ export class ProductService {
     return {
       data: {
         idProduct: product.idProduct,
+        idCategory: product.idCategory,
         description: product.description,
         price: product.price,
         urlImage: product.urlImage
@@ -134,6 +136,7 @@ export class ProductService {
       where: { idProduct: id },
       data: {
         idProduct: id,
+        idCategory: updateProductDto.idCategory,
         description: updateProductDto.description,
         price: Number(updateProductDto.price),
         urlImage: urlImage
@@ -144,6 +147,7 @@ export class ProductService {
       return {
         data: {
           idProduct: product.idProduct,
+          idCategory: product.idCategory,
           description: product.description,
           price: product.price,
           urlImage: product.urlImage
