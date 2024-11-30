@@ -24,9 +24,17 @@ export class OrderService {
 
     const totalValue = await this.calculateTotalOrderValue(createOrderDto.orderItens);
 
-    const orderItemsData = createOrderDto.orderItens.map((item) => ({
-      idProduct: item.product.idProduct,
-      quantity: item.quantity
+    const orderItemsData = await Promise.all(createOrderDto.orderItens.map(async (item) => {
+
+      const product = await this.prismaService.product.findUnique({
+        where: { idProduct: item.product.idProduct }
+      });
+    
+      return {
+        quantity: item.quantity,
+        description: product.description,
+        price: product.price
+      };
     }));
 
     return await this.prismaService.order.create({
@@ -223,9 +231,17 @@ export class OrderService {
 
     const totalValue = await this.calculateTotalOrderValue(updateOrderDto.orderItens);
 
-    const orderItemsData = updateOrderDto.orderItens.map((item) => ({
-      idProduct: item.product.idProduct,
-      quantity: item.quantity
+    const orderItemsData = await Promise.all(updateOrderDto.orderItens.map(async (item) => {
+
+      const product = await this.prismaService.product.findUnique({
+        where: { idProduct: item.product.idProduct }
+      });
+    
+      return {
+        quantity: item.quantity,
+        description: product.description,
+        price: product.price
+      };
     }));
 
     return await this.prismaService.order.update({

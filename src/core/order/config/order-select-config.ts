@@ -23,13 +23,9 @@ export const addressSelectConfig = {
 
 export const orderItensSelectConfig = {
     select: {
-        quantity: true,
-        product: {
-            select: {
-                description: true,
-                price: true,
-            },
-        },
+        description: true,
+        price: true,
+        quantity: true
     },
 };
 
