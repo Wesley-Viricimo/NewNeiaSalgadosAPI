@@ -21,6 +21,8 @@ export class ProductService {
 
   async create(createProductDto: CreateProductDto, file: Express.Multer.File) {
 
+    const selectedFields = productSelectConfig;
+
     await this.validateFieldsCreateProduct(createProductDto, file);
 
     let urlImage: string | null = null;
@@ -29,10 +31,11 @@ export class ProductService {
       urlImage = await this.s3Service.uploadFile(file);
     
     return await this.prismaService.product.create({
+      select: selectedFields,
       data: {
         description: createProductDto.description,
         price: Number(createProductDto.price),
-        idCategory: createProductDto.idCategory,
+        idCategory: Number(createProductDto.idCategory),
         urlImage
       }
     })
@@ -44,7 +47,8 @@ export class ProductService {
         statusCode: HttpStatus.CREATED
       };
     })
-    .catch(() => {
+    .catch((err) => {
+      console.log('err', err);
       this.exceptionHandler.errorBadRequestResponse('Erro ao cadastrar produto!');
     });
   }
@@ -59,9 +63,13 @@ export class ProductService {
       where: { description: createProductDto.description }
     });
 
-    if(existsProduct) {
-      this.exceptionHandler.errorBadRequestResponse('Produto já cadastrado!');
-    }
+    if(existsProduct) this.exceptionHandler.errorBadRequestResponse('Produto já cadastrado no sistema!');
+
+    const existsCategory = await this.prismaService.category.findUnique({
+      where: { idCategory: Number(createProductDto.idCategory) }
+    });
+
+    if(!existsCategory) this.exceptionHandler.errorBadRequestResponse('Categoria não cadastrada no sistema!');
   }
 
   async findAll(page: number, perPage: number, title: string): Promise<PaginatedOutputDto<Object>> {
@@ -119,10 +127,10 @@ export class ProductService {
       where: { idProduct: id }
     });
 
-    await this.validateExistsProduct(product, updateProductDto);
-    
     if(!product) this.exceptionHandler.errorNotFoundResponse('Este produto não está cadastrado no sistema!');
 
+    await this.validateExistsProduct(product, updateProductDto);
+    
     let urlImage: string | null = product.urlImage;
 
     if(file) {
@@ -136,7 +144,7 @@ export class ProductService {
       where: { idProduct: id },
       data: {
         idProduct: id,
-        idCategory: updateProductDto.idCategory,
+        idCategory: Number(updateProductDto.idCategory),
         description: updateProductDto.description,
         price: Number(updateProductDto.price),
         urlImage: urlImage

@@ -10,6 +10,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './shared/guards/auth.guard';
 import { PrismaService } from './shared/prisma/prisma.service';
 import { ExceptionHandler } from './shared/utils/services/exceptions/exceptions-handler';
+import { CategoryModule } from './core/category/category.module';
 
 @Module({
   imports: [
@@ -17,7 +18,8 @@ import { ExceptionHandler } from './shared/utils/services/exceptions/exceptions-
     ProductModule,
     UserModule,
     AddressModule,
-    OrderModule
+    OrderModule,
+    CategoryModule
   ],
   controllers: [AppController],
   providers: [
