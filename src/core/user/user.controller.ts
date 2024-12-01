@@ -10,6 +10,7 @@ import { User } from './entities/user.entity';
 import { ChangeUserStatusDTO } from './dto/user-status.dto';
 import { FastifyRequest } from 'fastify';
 import { MailConfirmation } from './dto/mail-confirmation.dto';
+import { MailResendDto } from './dto/mail-resend-dto';
 
 @Controller('api/v1/user')
 export class UserController {
@@ -63,9 +64,15 @@ export class UserController {
   }
 
   @Public()
-  @Patch('confirm-code')
+  @Post('confirm-code')
   confirmationCode(@Body() mailConfirmation: MailConfirmation) {
     return this.userService.confirmationCode(mailConfirmation);
+  }
+
+  @Public()
+  @Post('resend-confirm-code')
+  resendConfirmationCode(@Body() mailResendDto: MailResendDto) {
+    return this.userService.resendConfirmationCode(mailResendDto);
   }
 
   @Roles('ADMIN', 'DEV')

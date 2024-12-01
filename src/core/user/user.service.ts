@@ -14,6 +14,7 @@ import { EmailService } from 'src/shared/utils/aws/send-email.service';
 import { MailConfirmation } from './dto/mail-confirmation.dto';
 import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 import { ROLES } from './constants/users.constants';
+import { MailResendDto } from './dto/mail-resend-dto';
 
 @Injectable()
 export class UserService {
@@ -307,6 +308,30 @@ export class UserService {
       .catch(() => {
         this.exceptionHandler.errorBadRequestResponse('Erro ao ativar conta!');
       });
+    }
+  }
+
+  async resendConfirmationCode(mailResendDto: MailResendDto) {
+    
+    const user = await this.prismaService.user.findFirst({
+      where: { email: mailResendDto.email }
+    });
+
+    if(!user) this.exceptionHandler.errorNotFoundResponse('Este usuário não está cadastrado no sistema!');
+
+    const confirmationCode = await this.prismaService.userActivationCode.findUnique({
+      where: { idUser: user.idUser }
+    });
+
+    if(user.isActive && confirmationCode.confirmed) this.exceptionHandler.errorBadRequestResponse('Esta conta já foi ativa');
+
+    await this.emailService.sendActivateAccountEmail(user.email, user.name, confirmationCode.code);
+
+    const message = { severity: 'success', summary: 'Sucesso', detail: 'Código de ativação reenviado com sucesso!' };
+    
+    return {
+      message,
+      statusCode: HttpStatus.OK
     }
   }
 
