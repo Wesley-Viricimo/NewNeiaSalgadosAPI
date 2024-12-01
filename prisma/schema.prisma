@@ -83,14 +83,14 @@ model Category {
 
 model Order {
   idOrder               Int                 @default(autoincrement()) @id
-  idAddress             Int
+  idAddress             Int?
   idUser                Int
   orderStatus           String
   paymentMethod         String
   typeOfDelivery        String
   total                 Float
   user                  User                @relation(fields: [idUser], references: [idUser], onDelete: Cascade, onUpdate: Cascade)
-  address               Address             @relation(fields: [idAddress], references: [idAddress], onDelete: Cascade, onUpdate: Cascade)
+  address               Address?            @relation(fields: [idAddress], references: [idAddress], onDelete: Cascade, onUpdate: Cascade)
   orderItens            OrderItem[]
   orderStatusUpdatedAt  DateTime?
   deliveryDate          DateTime?

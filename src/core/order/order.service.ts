@@ -37,26 +37,31 @@ export class OrderService {
       };
     }));
 
-    return await this.prismaService.order.create({
-      data: {
-        typeOfDelivery: TYPE_OF_DELIVERY[createOrderDto.typeOfDelivery],
-        orderStatus: createOrderDto.typeOfDelivery === 0 ? ORDER_STATUS_DELIVERY[0] : ORDER_STATUS_WITHDRAWAL[0],
-        paymentMethod: PAYMENT_METHOD[createOrderDto.paymentMethod],
-        total: totalValue,
-        orderItens: {
-          create: orderItemsData
-        },
-        user: {
-          connect: {
-            idUser: userId
-          }
-        },
-        address: {
-          connect: {
-            idAddress: createOrderDto.idAddress
-          }
-        }
+    const orderData = {
+      typeOfDelivery: TYPE_OF_DELIVERY[createOrderDto.typeOfDelivery],
+      orderStatus: createOrderDto.typeOfDelivery === 0 ? ORDER_STATUS_DELIVERY[0] : ORDER_STATUS_WITHDRAWAL[0],
+      paymentMethod: PAYMENT_METHOD[createOrderDto.paymentMethod],
+      total: totalValue,
+      orderItens: {
+        create: orderItemsData
       },
+      user: {
+        connect: {
+          idUser: userId
+        }
+      }
+    };
+
+    if (TYPE_OF_DELIVERY[createOrderDto.typeOfDelivery] === "ENTREGA") {
+      orderData['address'] = {
+        connect: {
+          idAddress: createOrderDto.idAddress
+        }
+      };
+    }
+
+    return await this.prismaService.order.create({
+      data: orderData,
       include: {
         user: userSelectConfig,
         address: addressSelectConfig,
@@ -87,6 +92,10 @@ export class OrderService {
   private async validateOrderFields(orderDto: CreateOrderDto | UpdateOrderDto, userId: number, isUpdate = false, orderId?: number) {
     if (!TYPE_OF_DELIVERY[orderDto.typeOfDelivery]) this.exceptionHandler.errorBadRequestResponse(`Tipo de entrega: ${orderDto.typeOfDelivery} inválido!`);
 
+    const isEntrega = TYPE_OF_DELIVERY[orderDto.typeOfDelivery] === "ENTREGA";
+
+    if(isEntrega && !orderDto.idAddress) this.exceptionHandler.errorBadRequestResponse(`Endereço de entrega deve ser fornecido!`);
+
     if (!PAYMENT_METHOD[orderDto.paymentMethod]) this.exceptionHandler.errorBadRequestResponse(`Forma de pagamento: ${orderDto.paymentMethod} inválida!`);
 
     if (orderDto.orderItens.length === 0) this.exceptionHandler.errorBadRequestResponse(`Pedido não pode ser realizado sem itens!`);
@@ -97,13 +106,15 @@ export class OrderService {
 
     if (!user) this.exceptionHandler.errorNotFoundResponse(`Este usuário não está cadastrado no sistema!`);
 
-    const address = await this.prismaService.address.findUnique({
-      where: { idAddress: orderDto.idAddress }
-    });
-
-    if (!address) this.exceptionHandler.errorNotFoundResponse(`Este endereço não está cadastrado no sistema!`);
-
-    if (address.idUser !== user.idUser) this.exceptionHandler.errorBadRequestResponse(`O endereço fornecido não pertence a este usuário!`);
+    if(isEntrega) {
+      const address = await this.prismaService.address.findUnique({
+        where: { idAddress: orderDto.idAddress }
+      });
+  
+      if (!address) this.exceptionHandler.errorNotFoundResponse(`Este endereço não está cadastrado no sistema!`);
+  
+      if (address.idUser !== user.idUser) this.exceptionHandler.errorBadRequestResponse(`O endereço fornecido não pertence a este usuário!`); 
+    }
 
     if (isUpdate) {
       const order = await this.prismaService.order.findUnique({
