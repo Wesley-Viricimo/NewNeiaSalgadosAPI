@@ -4,7 +4,7 @@ export class CreateUserDto {
     @IsNotEmpty({ message: "O campo nome é obrigatório!" })
     name: string;
 
-    @IsNotEmpty({ message: "O campo sobrenome é obrigatório!" })
+    @IsNotEmpty({ message: "O campo apelido é obrigatório!" })
     surname: string;
 
     @IsNotEmpty({ message: "O campo cpf é obrigatório!" })

@@ -2,7 +2,7 @@ export class User {}
 
 export const UserSide = {
     name: "nome",
-    surname: "sobrenome",
+    surname: "apelido",
     cpf: "CPF",
     phone: "telefone",
     email: "e-mail",
