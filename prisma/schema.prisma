@@ -60,7 +60,8 @@ model Address {
 
 model Product {
   idProduct             Int                 @default(autoincrement()) @id
-  description           String              @unique()
+  title                 String              @unique()
+  description           String
   price                 Float     
   urlImage              String?
   idCategory            Int 

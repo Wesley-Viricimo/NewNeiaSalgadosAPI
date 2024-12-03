@@ -32,7 +32,7 @@ export class OrderService {
     
       return {
         quantity: item.quantity,
-        description: product.description,
+        description: product.title,
         price: product.price
       };
     }));
@@ -250,7 +250,7 @@ export class OrderService {
     
       return {
         quantity: item.quantity,
-        description: product.description,
+        description: product.title,
         price: product.price
       };
     }));

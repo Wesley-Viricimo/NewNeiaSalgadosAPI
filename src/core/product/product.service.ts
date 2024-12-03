@@ -33,6 +33,7 @@ export class ProductService {
     return await this.prismaService.product.create({
       select: selectedFields,
       data: {
+        title: createProductDto.title,
         description: createProductDto.description,
         price: Number(createProductDto.price),
         idCategory: Number(createProductDto.idCategory),
@@ -60,7 +61,7 @@ export class ProductService {
     if(isNaN(Number(createProductDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
 
     const existsProduct = await this.prismaService.product.findUnique({
-      where: { description: createProductDto.description }
+      where: { title: createProductDto.title }
     });
 
     if(existsProduct) this.exceptionHandler.errorBadRequestResponse('Produto já cadastrado no sistema!');
@@ -178,7 +179,7 @@ export class ProductService {
 
   private async validateExistsProduct(product: Product, updateProductDto: UpdateProductDto) {
     const existsProduct = await this.prismaService.product.findUnique({
-      where: { description: updateProductDto.description }
+      where: { title: updateProductDto.title }
     });
 
     if(existsProduct && (product.idProduct !== existsProduct.idProduct)) {
