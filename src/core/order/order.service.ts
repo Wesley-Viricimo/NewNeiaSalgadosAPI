@@ -29,6 +29,16 @@ export class OrderService {
 
     totalValue += additionalTotalValue;
 
+    const orderAdditionalData = await Promise.all(createOrderDto.additionalItens.map(async (item) => {
+      const additional = await this.prismaService.additional.findUnique({
+        where: { idAdditional: item.idAdditional }
+      });
+  
+      return {
+        idAdditional: additional.idAdditional
+      };
+    }));
+
     const orderItemsData = await Promise.all(createOrderDto.orderItens.map(async (item) => {
 
       const product = await this.prismaService.product.findUnique({
@@ -48,6 +58,9 @@ export class OrderService {
       paymentMethod: PAYMENT_METHOD[createOrderDto.paymentMethod],
       totalAdditional: additionalTotalValue,
       total: totalValue,
+      orderAdditional: {
+        create: orderAdditionalData 
+      },
       orderItens: {
         create: orderItemsData
       },
@@ -268,6 +281,16 @@ export class OrderService {
 
     totalValue += additionalTotalValue;
 
+    const orderAdditionalData = await Promise.all(updateOrderDto.additionalItens.map(async (item) => {
+      const additional = await this.prismaService.additional.findUnique({
+        where: { idAdditional: item.idAdditional }
+      });
+  
+      return {
+        idAdditional: additional.idAdditional
+      };
+    }));
+
     const orderItemsData = await Promise.all(updateOrderDto.orderItens.map(async (item) => {
 
       const product = await this.prismaService.product.findUnique({
@@ -288,6 +311,9 @@ export class OrderService {
         paymentMethod: PAYMENT_METHOD[updateOrderDto.paymentMethod],
         totalAdditional: additionalTotalValue,
         total: totalValue,
+        orderAdditional: {
+          create: orderAdditionalData
+        },
         orderItens: {
           create: orderItemsData
         }
