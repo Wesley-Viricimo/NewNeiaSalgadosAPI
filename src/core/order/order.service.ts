@@ -10,6 +10,7 @@ import { userSelectConfig, addressSelectConfig, orderItensSelectConfig, orderSel
 import { subMinutes, isAfter, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
+import { AdditionalItemDto } from './dto/additional-item.dto';
 
 @Injectable()
 export class OrderService {
@@ -22,7 +23,11 @@ export class OrderService {
 
     await this.validateOrderFields(createOrderDto, userId);
 
-    const totalValue = await this.calculateTotalOrderValue(createOrderDto.orderItens);
+    let totalValue = await this.calculateTotalOrderValue(createOrderDto.orderItens);
+
+    const additionalTotalValue = await this.calculateTotalAdditionalValue(createOrderDto.additionalItens);
+
+    totalValue += additionalTotalValue;
 
     const orderItemsData = await Promise.all(createOrderDto.orderItens.map(async (item) => {
 
@@ -41,6 +46,7 @@ export class OrderService {
       typeOfDelivery: TYPE_OF_DELIVERY[createOrderDto.typeOfDelivery],
       orderStatus: createOrderDto.typeOfDelivery === 0 ? ORDER_STATUS_DELIVERY[0] : ORDER_STATUS_WITHDRAWAL[0],
       paymentMethod: PAYMENT_METHOD[createOrderDto.paymentMethod],
+      totalAdditional: additionalTotalValue,
       total: totalValue,
       orderItens: {
         create: orderItemsData
@@ -155,6 +161,22 @@ export class OrderService {
     return totalValue;
   }
 
+  private async calculateTotalAdditionalValue(additionalItens: AdditionalItemDto[]) {
+    let totalValue = 0;
+
+    for (const item of additionalItens) {
+      const additional = await this.prismaService.additional.findUnique({
+        where: { idAdditional: item.idAdditional }
+      });
+
+      if (!additional) this.exceptionHandler.errorBadRequestResponse(`O adicional id:${additional.idAdditional} não está cadastrado no sistema!`);
+
+      totalValue += additional.price;
+    }
+
+    return totalValue;
+  }
+
   async findAllOrders(page: number, perPage: number, isPending: boolean = false): Promise<PaginatedOutputDto<Object>> {
     const selectedFields = orderSelectFields;
 
@@ -240,7 +262,11 @@ export class OrderService {
 
     await this.validateOrderFields(updateOrderDto, userId, true, id);
 
-    const totalValue = await this.calculateTotalOrderValue(updateOrderDto.orderItens);
+    let totalValue = await this.calculateTotalOrderValue(updateOrderDto.orderItens);
+
+    const additionalTotalValue = await this.calculateTotalAdditionalValue(updateOrderDto.additionalItens);
+
+    totalValue += additionalTotalValue;
 
     const orderItemsData = await Promise.all(updateOrderDto.orderItens.map(async (item) => {
 
@@ -260,6 +286,7 @@ export class OrderService {
       data: {
         typeOfDelivery: TYPE_OF_DELIVERY[updateOrderDto.typeOfDelivery],
         paymentMethod: PAYMENT_METHOD[updateOrderDto.paymentMethod],
+        totalAdditional: additionalTotalValue,
         total: totalValue,
         orderItens: {
           create: orderItemsData
@@ -282,6 +309,7 @@ export class OrderService {
             paymentMethod: order.paymentMethod,
             typeOfDelivery: order.typeOfDelivery,
             orderItens: order.orderItens,
+            totalAdditional: additionalTotalValue,
             total: order.total
           },
           message,

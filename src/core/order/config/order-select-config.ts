@@ -37,6 +37,7 @@ export const orderSelectFields = {
     typeOfDelivery: true,
     paymentMethod: true,
     orderStatus: true,
+    totalAdditional: true,
     total: true,
 };
 
