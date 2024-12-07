@@ -126,8 +126,6 @@ export class CategoryService {
       where: { idCategory: id }
     });
 
-    console.log('products', products);
-
     if(products.length > 0) this.exceptionHandler.errorBadRequestResponse(`Existem produtos que pertecem a esta categoria, então não é possível excluí-la!`);
 
     return await this.prismaService.category.delete({

@@ -55,17 +55,17 @@ export class AdditionalService {
         price: updateAdditionalDto.price
       }
     })
-    .then(result => {
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Adicional atualizado com sucesso!' };
-      return {
-        data: result,
-        message,
-        statusCode: HttpStatus.CREATED
-      }
-    })
-    .catch(() => {
-      this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar adicional!');
-    });
+      .then(result => {
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Adicional atualizado com sucesso!' };
+        return {
+          data: result,
+          message,
+          statusCode: HttpStatus.CREATED
+        }
+      })
+      .catch(() => {
+        this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar adicional!');
+      });
   }
 
   async validateFieldsUpdateAdditional(id: number, updateAdditionalDto: UpdateAdditionalDto) {
@@ -79,10 +79,50 @@ export class AdditionalService {
   }
 
   async findAllAdditional() {
+    try {
+      const additionals = await this.prismaService.additional.findMany();
 
+      const data = additionals.map(additional => ({
+        idAdditional: additional.idAdditional,
+        description: additional.description,
+        price: additional.price
+      }));
+
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Adicionais listados com sucesso.' };
+      return {
+        data,
+        message,
+        statusCode: HttpStatus.OK
+      };
+    } catch (error) {
+      this.exceptionHandler.errorBadRequestResponse('Erro ao listar categorias!');
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} additional`;
+  async remove(id: number) {
+    const additional = await this.prismaService.additional.findUnique({
+      where: { idAdditional: id }
+    });
+
+    if(!additional) this.exceptionHandler.errorNotFoundResponse(`Esta categoria não está cadastrada no sistema!`);
+
+    const ordersAdditional = await this.prismaService.orderAdditional.findMany({
+      where: { idAdditional: id }
+    });
+
+    if(ordersAdditional.length > 0) {
+      for(const add of ordersAdditional) {
+        await this.prismaService.orderAdditional.delete({
+          where: { idProductAdditional: add.idProductAdditional }
+        })
+      }
+    }
+
+    return await this.prismaService.additional.delete({
+      where: { idAdditional: id }
+    })
+    .catch(() => {
+      this.exceptionHandler.errorBadRequestResponse('Erro ao excluir adicional!');
+    })
   }
 }
