@@ -2,7 +2,7 @@ import { IsNotEmpty } from 'class-validator';
 
 export class CreateProductDto {
     @IsNotEmpty({ message: "O campo título não pode ser vazio!" })
-    title:string;
+    title: string;
 
     @IsNotEmpty({ message: "O campo descrição não pode ser vazio!" })
     description: string;
