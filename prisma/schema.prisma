@@ -66,6 +66,7 @@ model Product {
   urlImage              String?
   idCategory            Int 
   category              Category            @relation("CategoryProducts", fields: [idCategory], references: [idCategory], onDelete: Cascade, onUpdate: Cascade)
+  productAdditional     ProductAdditional[]
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 
@@ -110,6 +111,25 @@ model OrderItem {
   order                 Order               @relation(fields: [idOrder], references: [idOrder], onDelete: Cascade, onUpdate: Cascade)
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
+
+  @@schema("sales")
+}
+
+model Additional {
+  idAdditional          Int                 @default(autoincrement()) @id
+  description           String              @unique
+  price                 Float
+  productAdditional     ProductAdditional[]
+
+  @@schema("sales")
+}
+
+model ProductAdditional {
+  idProductAdditional   Int                 @default(autoincrement()) @id
+  idProduct             Int
+  idAdditional          Int
+  product               Product[]
+  additional            Additional[]
 
   @@schema("sales")
 }
