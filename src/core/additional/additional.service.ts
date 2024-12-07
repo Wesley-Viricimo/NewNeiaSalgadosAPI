@@ -110,13 +110,8 @@ export class AdditionalService {
         },
       });
   
-      if (!productWithAdditionals) {
-        throw new Error('Produto não encontrado.');
-      }
-  
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Adicional vinculado ao produto com sucesso!' };
-
-      const response = {
+      return {
         data: {
           idProduct: productWithAdditionals.idProduct,
           titleProduct: productWithAdditionals.title,
@@ -129,8 +124,6 @@ export class AdditionalService {
         message,
         statusCode: HttpStatus.CREATED,
       };
-  
-      return response;
   
     } catch (error) {
       this.exceptionHandler.errorBadRequestResponse('Erro ao vincular adicional ao produto!');
