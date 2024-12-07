@@ -29,15 +29,17 @@ export class OrderService {
 
     totalValue += additionalTotalValue;
 
-    const orderAdditionalData = await Promise.all(createOrderDto.additionalItens.map(async (item) => {
-      const additional = await this.prismaService.additional.findUnique({
-        where: { idAdditional: item.idAdditional }
-      });
-  
-      return {
-        idAdditional: additional.idAdditional
-      };
-    }));
+    const orderAdditionalData = [];
+
+    if(createOrderDto.additionalItens != undefined) {
+      for (const item of createOrderDto.additionalItens) {
+        const additional = await this.prismaService.additional.findUnique({
+          where: { idAdditional: item.idAdditional }
+        });
+
+        orderAdditionalData.push({ idAdditional: additional.idAdditional })
+      }
+    }
 
     const orderItemsData = await Promise.all(createOrderDto.orderItens.map(async (item) => {
 
@@ -97,6 +99,7 @@ export class OrderService {
             orderStatus: order.orderStatus,
             paymentMethod: order.paymentMethod,
             typeOfDelivery: order.typeOfDelivery,
+            totalAdditional: order.totalAdditional,
             total: order.total
           },
           message,
@@ -177,16 +180,17 @@ export class OrderService {
   private async calculateTotalAdditionalValue(additionalItens: AdditionalItemDto[]) {
     let totalValue = 0;
 
-    for (const item of additionalItens) {
-      const additional = await this.prismaService.additional.findUnique({
-        where: { idAdditional: item.idAdditional }
-      });
-
-      if (!additional) this.exceptionHandler.errorBadRequestResponse(`O adicional id:${additional.idAdditional} não está cadastrado no sistema!`);
-
-      totalValue += additional.price;
+    if(additionalItens != undefined) {
+      for (const item of additionalItens) {
+        const additional = await this.prismaService.additional.findUnique({
+          where: { idAdditional: item.idAdditional }
+        });
+  
+        if (!additional) this.exceptionHandler.errorBadRequestResponse(`O adicional id:${additional.idAdditional} não está cadastrado no sistema!`);
+  
+        totalValue += additional.price;
+      }
     }
-
     return totalValue;
   }
 
@@ -264,6 +268,7 @@ export class OrderService {
         typeOfDelivery: order.typeOfDelivery,
         paymentMethod: order.paymentMethod,
         orderStatus: order.orderStatus,
+        totalAdditional: order.totalAdditional,
         total: order.total
       },
       message,
@@ -411,6 +416,7 @@ export class OrderService {
             orderStatus: order.orderStatus,
             paymentMethod: order.paymentMethod,
             typeOfDelivery: order.typeOfDelivery,
+            totalAdditional: order.totalAdditional,
             total: order.total,
             deliveryDate: order.deliveryDate? format(new Date(order.deliveryDate), "dd/MM/yyyy HH:mm", { locale: ptBR }) : ''
           },

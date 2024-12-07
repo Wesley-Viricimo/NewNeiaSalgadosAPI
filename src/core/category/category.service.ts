@@ -140,8 +140,6 @@ export class CategoryService {
       where: { description: updateCategoryDto.description }
     });
 
-    if(existsCategory && (category.idCategory !== existsCategory.idCategory)) {
-      this.exceptionHandler.errorBadRequestResponse(`Esta categoria já foi cadastrada no sistema!`);
-    }
+    if(existsCategory && (category.idCategory !== existsCategory.idCategory)) this.exceptionHandler.errorBadRequestResponse(`Esta categoria já foi cadastrada no sistema!`);
   }
 }

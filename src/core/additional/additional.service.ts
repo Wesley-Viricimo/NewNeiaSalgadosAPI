@@ -3,6 +3,7 @@ import { CreateAdditionalDto } from './dto/create-additional.dto';
 import { UpdateAdditionalDto } from './dto/update-additional.dto';
 import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { Additional } from '@prisma/client';
 
 @Injectable()
 export class AdditionalService {
@@ -46,7 +47,14 @@ export class AdditionalService {
   }
 
   async update(id: number, updateAdditionalDto: UpdateAdditionalDto) {
-    await this.validateFieldsUpdateAdditional(id, updateAdditionalDto);
+
+    const additional = await this.prismaService.additional.findUnique({
+      where: { idAdditional: id }
+    });
+
+    if(!additional) this.exceptionHandler.errorBadRequestResponse('Adicional não cadastrado no sistema!');
+
+    await this.validateFieldsUpdateAdditional(additional, updateAdditionalDto);
 
     return this.prismaService.additional.update({
       where: { idAdditional: id },
@@ -68,14 +76,14 @@ export class AdditionalService {
       });
   }
 
-  async validateFieldsUpdateAdditional(id: number, updateAdditionalDto: UpdateAdditionalDto) {
+  async validateFieldsUpdateAdditional(additional: Additional, updateAdditionalDto: UpdateAdditionalDto) {
     if (isNaN(Number(updateAdditionalDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do adicional deve ser um valor numérico!`);
 
     const existsAdditional = await this.prismaService.additional.findFirst({
       where: { description: updateAdditionalDto.description }
-    });
+    })
 
-    if (existsAdditional.idAdditional !== id) this.exceptionHandler.errorBadRequestResponse('Adicional já cadastrado no sistema!');
+    if(existsAdditional && (additional.idAdditional !== existsAdditional.idAdditional)) this.exceptionHandler.errorBadRequestResponse(`Este adicional já foi cadastrada no sistema!`);
   }
 
   async findAllAdditional() {

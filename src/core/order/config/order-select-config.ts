@@ -50,5 +50,6 @@ export const orderSelectByIdFields = {
     typeOfDelivery: true,
     paymentMethod: true,
     orderStatus: true,
+    totalAdditional: true,
     total: true,
 };
