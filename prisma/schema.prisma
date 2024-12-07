@@ -128,8 +128,8 @@ model ProductAdditional {
   idProductAdditional   Int                 @default(autoincrement()) @id
   idProduct             Int
   idAdditional          Int
-  product               Product[]
-  additional            Additional[]
+  product               Product             @relation(fields: [idProduct], references: [idProduct])
+  additional            Additional          @relation(fields: [idAdditional], references: [idAdditional])
 
   @@schema("sales")
 }
