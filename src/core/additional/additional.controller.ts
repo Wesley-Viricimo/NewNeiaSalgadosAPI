@@ -1,4 +1,3 @@
-import { CreateAdditionalProductDto } from './dto/create-additional-product.dto';
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpCode } from '@nestjs/common';
 import { AdditionalService } from './additional.service';
 import { CreateAdditionalDto } from './dto/create-additional.dto';
@@ -18,22 +17,18 @@ export class AdditionalController {
 
   @Roles('ADMIN', 'DEV')
   @HttpCode(HttpStatus.CREATED)
-  @Post('/product')
-  createAdditionalProduct(@Body() createAdditionalProductDto: CreateAdditionalProductDto) {
-    return this.additionalService.createAdditionalProduct(createAdditionalProductDto);
-  }
-
-  @Get('product/:id')
-  @HttpCode(HttpStatus.OK)
-  findAdditionalByProduct(@Param('id') id: string) {
-    return this.additionalService.findAdditionalByProduct(+id);
-  }
-
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAdditionalDto: UpdateAdditionalDto) {
     return this.additionalService.update(+id, updateAdditionalDto);
   }
 
+  @Get()
+  findAllAdditional() {
+    return this.additionalService.findAllAdditional();
+  }
+
+  @Roles('ADMIN', 'DEV')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.additionalService.remove(+id);
