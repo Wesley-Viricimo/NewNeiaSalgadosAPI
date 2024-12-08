@@ -50,6 +50,7 @@ export class OrderService {
       return {
         quantity: item.quantity,
         description: product.title,
+        comment: item.comment,
         price: product.price
       };
     }));
@@ -305,6 +306,7 @@ export class OrderService {
       return {
         quantity: item.quantity,
         description: product.title,
+        comment: item.comment,
         price: product.price
       };
     }));

@@ -109,6 +109,7 @@ model OrderItem {
   description           String
   price                 Float
   quantity              Int
+  comment               String?
   order                 Order               @relation(fields: [idOrder], references: [idOrder], onDelete: Cascade, onUpdate: Cascade)
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
