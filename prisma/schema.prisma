@@ -22,7 +22,7 @@ model User {
   isActive              Boolean             @default(false)
   address               Address[]
   order                 Order[]
-  notificationToken     NotificationToken?  @relation("UserToNotificationToken")
+  notificationToken     UserNotificationToken?  @relation("UserToNotificationToken")
   userActivationCode    UserActivationCode? @relation("UserToActivationCode")  
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt 
@@ -30,7 +30,7 @@ model User {
   @@schema("sales")
 }
 
-model NotificationToken {
+model UserNotificationToken {
   idToken               Int                 @default(autoincrement()) @id
   idUser                Int                 @unique()
   token                 String              @unique()
