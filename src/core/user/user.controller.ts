@@ -81,4 +81,10 @@ export class UserController {
   changeUserActivity(@Param('id') id: string, @Body() changeUserStatusDTO: ChangeUserStatusDTO) {
     return this.userService.changeUserActivity(+id, changeUserStatusDTO);
   }
+
+  @Post('save-notificationToken')
+  @HttpCode(HttpStatus.CREATED)
+  saveNotificationToken(@Body() notificationToken: string, @Req() request: FastifyRequest) {
+    return this.userService.saveNotificationToken(notificationToken, request['userId']);
+  }
 }

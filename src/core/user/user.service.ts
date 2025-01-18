@@ -361,5 +361,10 @@ export class UserService {
     .catch(() => {
       this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar atividade do usuário!');
     });
-  }  
+  }
+  
+  async saveNotificationToken(notificationToken: string, userId: number) {
+    console.log('notification token', notificationToken);
+    console.log('notification token', userId);
+  }
 }

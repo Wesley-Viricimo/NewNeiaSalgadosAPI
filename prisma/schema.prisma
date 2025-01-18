@@ -22,9 +22,21 @@ model User {
   isActive              Boolean             @default(false)
   address               Address[]
   order                 Order[]
+  notificationToken     NotificationToken?  @relation("UserToNotificationToken")
   userActivationCode    UserActivationCode? @relation("UserToActivationCode")  
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt 
+
+  @@schema("sales")
+}
+
+model NotificationToken {
+  idToken               Int                 @default(autoincrement()) @id
+  idUser                Int                 @unique()
+  token                 String              @unique()
+  user                  User                @relation("UserToNotificationToken", fields: [idUser], references: [idUser], onDelete: Cascade, onUpdate: Cascade)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
 
   @@schema("sales")
 }
