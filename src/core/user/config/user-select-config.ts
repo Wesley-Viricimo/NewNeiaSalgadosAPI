@@ -7,3 +7,14 @@ export const userSelectConfig = {
     role: true,
     isActive: true
 };
+
+export const userTokenSelectConfig = {
+    select: {
+        name: true,
+        surname: true,
+        cpf: true,
+        email: true,
+        role: true,
+        isActive: true,
+    },
+}

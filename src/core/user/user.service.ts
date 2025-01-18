@@ -7,7 +7,7 @@ import { cpf } from 'cpf-cnpj-validator';
 import { hash } from 'bcryptjs';
 import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
-import { userSelectConfig } from './config/user-select-config';
+import { userSelectConfig, userTokenSelectConfig } from './config/user-select-config';
 import { Prisma, User } from '@prisma/client';
 import { ChangeUserStatusDTO } from './dto/user-status.dto';
 import { EmailService } from 'src/shared/utils/aws/send-email.service';
@@ -364,7 +364,39 @@ export class UserService {
   }
   
   async saveNotificationToken(notificationToken: string, userId: number) {
-    console.log('notification token', notificationToken);
-    console.log('notification token', userId);
-  }
+    try {
+  
+      return await this.prismaService.userNotificationToken.upsert({
+        where: { idUser: userId }, // Busca pelo userId, para garantir que cada usuário tenha um único token
+        update: {
+          token: notificationToken, // Atualiza o token se já existir
+        },
+        create: {
+          token: notificationToken, // Cria um novo token se não existir
+          user: {
+            connect: {
+              idUser: userId
+            },
+          },
+        },
+        include: {
+          user: userTokenSelectConfig
+        },
+      })
+      .then(notificationToken => {
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Token de notificação cadastrado com sucesso!' };
+        return {
+          data: {
+            idToken: notificationToken.idToken,
+            token: notificationToken.token,
+            user: notificationToken.user,
+          },
+          message,
+          statusCode: HttpStatus.CREATED
+        };
+      });
+    } catch (error) {
+      this.exceptionHandler.errorBadRequestResponse('Erro ao cadastrar token de notificação!');
+    }
+  }  
 }
