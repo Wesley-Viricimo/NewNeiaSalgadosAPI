@@ -11,12 +11,14 @@ import { subMinutes, isAfter, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 import { AdditionalItemDto } from './dto/additional-item.dto';
+import { NotificationService } from 'src/shared/utils/Api/notification.service';
 
 @Injectable()
 export class OrderService {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly exceptionHandler: ExceptionHandler
+    private readonly exceptionHandler: ExceptionHandler,
+    private readonly notificationService: NotificationService
   ) { }
 
   async create(createOrderDto: CreateOrderDto, userId: number) {
@@ -82,6 +84,7 @@ export class OrderService {
       };
     }
 
+    
     return await this.prismaService.order.create({
       data: orderData,
       include: {
@@ -89,27 +92,32 @@ export class OrderService {
         address: addressSelectConfig,
         orderItens: orderItensSelectConfig
       }
-    })
-      .then(order => {
-        const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido realizado com sucesso!' };
-        return {
-          data: {
-            user: order.user,
-            address: order.address,
-            orderItens: order.orderItens,
-            orderStatus: order.orderStatus,
-            paymentMethod: order.paymentMethod,
-            typeOfDelivery: order.typeOfDelivery,
-            totalAdditional: order.totalAdditional,
-            total: order.total
-          },
-          message,
-          statusCode: HttpStatus.CREATED
-        }
-      })
-      .catch(() => {
-        this.exceptionHandler.errorBadRequestResponse('Erro ao realizar pedido!');
+    }).then(async (order) => { 
+      const userNotificationToken = await this.prismaService.userNotificationToken.findUnique({
+        where: { idUser: order.idUser }
       });
+    
+      if (userNotificationToken) {
+        await this.notificationService.sendPushNotification(userNotificationToken.token, 'Pedido realizado', 'Seu pedido foi realizado com sucesso. Em breve enviaremos notificações atualizando o status de seu pedido');
+      }
+      const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido realizado com sucesso!' };
+      return {
+        data: {
+          user: order.user,
+          address: order.address,
+          orderItens: order.orderItens,
+          orderStatus: order.orderStatus,
+          paymentMethod: order.paymentMethod,
+          typeOfDelivery: order.typeOfDelivery,
+          totalAdditional: order.totalAdditional,
+          total: order.total
+        },
+        message,
+        statusCode: HttpStatus.CREATED
+      };
+    }).catch(() => {
+      this.exceptionHandler.errorBadRequestResponse('Erro ao realizar pedido!');
+    });
   }
 
   private async validateOrderFields(orderDto: CreateOrderDto | UpdateOrderDto, userId: number, isUpdate = false, orderId?: number) {
