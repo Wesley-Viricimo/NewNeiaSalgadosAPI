@@ -12,6 +12,7 @@ import { ptBR } from 'date-fns/locale';
 import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 import { AdditionalItemDto } from './dto/additional-item.dto';
 import { NotificationService } from 'src/shared/utils/Api/notification.service';
+import getMessageStatus from './constants/order.messages';
 
 @Injectable()
 export class OrderService {
@@ -83,8 +84,7 @@ export class OrderService {
         }
       };
     }
-
-    
+  
     return await this.prismaService.order.create({
       data: orderData,
       include: {
@@ -93,11 +93,12 @@ export class OrderService {
         orderItens: orderItensSelectConfig
       }
     }).then(async (order) => { 
+      
       const userNotificationToken = await this.prismaService.userNotificationToken.findUnique({
         where: { idUser: order.idUser }
       });
     
-      if (userNotificationToken) {
+      if (userNotificationToken)  {
         await this.notificationService.sendPushNotification(userNotificationToken.token, 'Pedido realizado', 'Seu pedido foi realizado com sucesso. Em breve enviaremos notificações atualizando o status de seu pedido');
       }
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido realizado com sucesso!' };
@@ -383,7 +384,7 @@ export class OrderService {
           isPending = true;
         }
 
-        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_DELIVERY[orderstatus], isPending);
+        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_DELIVERY[orderstatus], isPending, order.typeOfDelivery);
       }
 
       case 'RETIRA': {
@@ -394,14 +395,14 @@ export class OrderService {
           isPending = true;
         }
 
-        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_WITHDRAWAL[orderstatus], isPending);
+        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_WITHDRAWAL[orderstatus], isPending, order.typeOfDelivery);
       }
 
       default: break;
     }
   }
 
-  async updateOrderStatus(orderId: number, orderStatus: string, isPending: boolean) {
+  async updateOrderStatus(orderId: number, orderStatus: string, isPending: boolean, typeOfDelivery: string) {
     return await this.prismaService.order.update({
       where: { idOrder: orderId },
       data: {
@@ -415,7 +416,16 @@ export class OrderService {
         orderItens: orderItensSelectConfig
       }
     })
-      .then(order => {
+      .then(async (order) => {
+        const userNotificationToken = await this.prismaService.userNotificationToken.findUnique({
+          where: { idUser: order.idUser }
+        });
+
+        const messageStatus = getMessageStatus(orderStatus, typeOfDelivery);
+        if (userNotificationToken) {
+          await this.notificationService.sendPushNotification(userNotificationToken.token, messageStatus.title, messageStatus.body);
+        }
+
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Status do pedido atualizado com sucesso!' };
         return {
           data: {
