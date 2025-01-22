@@ -216,9 +216,6 @@ export class UserService {
 
   async updateUserRole(userId: number, role: string) {
 
-    console.log(role);
-    console.log('user id', userId);
-
     if(!ROLES[role]) this.exceptionHandler.errorBadRequestResponse(`Não existe a função com o id: ${role}`);
 
     const user = await this.prismaService.user.findUnique({
