@@ -2,7 +2,7 @@ import { Injectable, HttpStatus } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { PAYMENT_METHOD, TYPE_OF_DELIVERY, ORDER_STATUS_DELIVERY, ORDER_STATUS_WITHDRAWAL } from './constants/order.constants';
+import { PAYMENT_METHOD, TYPE_OF_DELIVERY, ORDER_STATUS_DELIVERY, ORDER_STATUS_WITHDRAWAL, ORDER_PLACED } from './constants/order.constants';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Order, Prisma } from '@prisma/client';
 import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
@@ -98,9 +98,8 @@ export class OrderService {
         where: { idUser: order.idUser }
       });
     
-      if (userNotificationToken)  {
-        await this.notificationService.sendPushNotification(userNotificationToken.token, 'Pedido realizado', 'Seu pedido foi realizado com sucesso. Em breve enviaremos notificações atualizando o status de seu pedido');
-      }
+      if (userNotificationToken)  await this.notificationService.sendPushNotification(userNotificationToken.token, ORDER_PLACED.title, ORDER_PLACED.body);
+      
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido realizado com sucesso!' };
       return {
         data: {

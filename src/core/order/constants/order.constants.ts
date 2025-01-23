@@ -27,6 +27,11 @@ export const ORDER_STATUS_WITHDRAWAL = {
     5: "CANCELADO"
 }
 
+export const ORDER_PLACED ={
+    title: "Pedido realizado",
+    body: "Seu pedido foi realizado com sucesso. Em breve enviaremos notificações atualizando o status de seu pedido"
+}
+
 export const ORDER_PENDING = {
     title: "Pedido pendente",
     body: "Seu pedido foi realizado com sucesso. Em breve enviaremos notificações atualizando o status de seu pedido"
