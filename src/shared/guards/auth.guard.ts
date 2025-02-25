@@ -4,7 +4,7 @@ import { verify } from 'jsonwebtoken';
 import { PrismaService } from '../prisma/prisma.service';
 import { ROLES_KEY } from '../decorators/rolesPermission.decorator';
 import { FastifyRequest } from 'fastify';
-import { ExceptionHandler } from '../utils/services/exceptions/exceptions-handler';
+import { ExceptionHandler } from '../utils/exceptions/exceptions-handler';
 
 interface UserInfo {
   idUser: number,

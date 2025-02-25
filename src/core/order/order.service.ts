@@ -9,10 +9,10 @@ import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { userSelectConfig, addressSelectConfig, orderItensSelectConfig, orderSelectFields, orderSelectByIdFields } from 'src/core/order/config/order-select-config';
 import { subMinutes, isAfter, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 import { AdditionalItemDto } from './dto/additional-item.dto';
-import { NotificationService } from 'src/shared/utils/Api/notification.service';
+import { NotificationService } from 'src/service/notification.service';
 import getMessageStatus from './constants/order.messages';
+import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 
 @Injectable()
 export class OrderService {

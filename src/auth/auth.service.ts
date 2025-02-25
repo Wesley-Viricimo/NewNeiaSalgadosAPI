@@ -3,7 +3,7 @@ import { AuthDto } from './dto/AuthDto';
 import { UserService } from 'src/core/user/user.service';
 import { compare } from 'bcryptjs';
 import { TokenService } from './token/token.service';
-import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
+import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 
 interface TokenAuthPayload {
   idUser: number,

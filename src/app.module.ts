@@ -9,7 +9,7 @@ import { OrderModule } from './core/order/order.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './shared/guards/auth.guard';
 import { PrismaService } from './shared/prisma/prisma.service';
-import { ExceptionHandler } from './shared/utils/services/exceptions/exceptions-handler';
+import { ExceptionHandler } from './shared/utils/exceptions/exceptions-handler';
 import { CategoryModule } from './core/category/category.module';
 import { AdditionalModule } from './core/additional/additional.module';
 

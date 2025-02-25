@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { AddressService } from './address.service';
 import { AddressController } from './address.controller';
-import { ViaCepService } from 'src/shared/utils/Api/viacep.service';
-import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
+import { ViaCepService } from 'src/service/viacep.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 import { HttpModule } from '@nestjs/axios';
+import { ErrorExceptionFilters } from 'src/shared/utils/httpResponseService/errorResponse.service';
+import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 
 @Module({
   imports: [HttpModule],

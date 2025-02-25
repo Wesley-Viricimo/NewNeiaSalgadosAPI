@@ -10,11 +10,11 @@ import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { userSelectConfig, userTokenSelectConfig } from './config/user-select-config';
 import { Prisma, User } from '@prisma/client';
 import { ChangeUserStatusDTO } from './dto/user-status.dto';
-import { EmailService } from 'src/shared/utils/aws/send-email.service';
 import { MailConfirmation } from './dto/mail-confirmation.dto';
-import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 import { ROLES } from './constants/users.constants';
 import { MailResendDto } from './dto/mail-resend-dto';
+import { EmailService } from 'src/service/aws/send-email.service';
+import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 
 @Injectable()
 export class UserService {

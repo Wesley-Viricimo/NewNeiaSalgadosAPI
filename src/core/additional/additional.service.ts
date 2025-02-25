@@ -1,9 +1,9 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateAdditionalDto } from './dto/create-additional.dto';
 import { UpdateAdditionalDto } from './dto/update-additional.dto';
-import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { Additional } from '@prisma/client';
+import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 
 @Injectable()
 export class AdditionalService {

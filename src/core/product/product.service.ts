@@ -7,8 +7,8 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Prisma, Product } from '@prisma/client';
 import { productSelectConfig } from './config/product-select-config';
-import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
-import { S3Service } from 'src/shared/utils/aws/handle-fileS3.service';
+import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
+import { S3Service } from 'src/service/aws/handle-fileS3.service';
 
 @Injectable()
 export class ProductService {

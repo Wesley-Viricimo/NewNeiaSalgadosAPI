@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { ProductController } from './product.controller';
-import { ErrorExceptionFilters } from 'src/shared/utils/services/httpResponseService/errorResponse.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
-import { S3Service } from 'src/shared/utils/aws/handle-fileS3.service';
+import { ErrorExceptionFilters } from 'src/shared/utils/httpResponseService/errorResponse.service';
+import { S3Service } from 'src/service/aws/handle-fileS3.service';
+import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 
 @Module({
   controllers: [ProductController],

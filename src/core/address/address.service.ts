@@ -2,13 +2,13 @@ import { Injectable, HttpStatus } from '@nestjs/common';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { PaginatorTypes, paginator } from '@nodeteam/nestjs-prisma-pagination';
-import { ViaCepService } from 'src/shared/utils/Api/viacep.service';
+import { ViaCepService } from 'src/service/viacep.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { AddressSide } from './entities/address.entity';
 import { Address, Prisma } from '@prisma/client';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { userSelectConfig, addressByIdSelectConfig, addressSelectConfig } from './config/address-select-config';
-import { ExceptionHandler } from 'src/shared/utils/services/exceptions/exceptions-handler';
+import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 
 @Injectable()
 export class AddressService {

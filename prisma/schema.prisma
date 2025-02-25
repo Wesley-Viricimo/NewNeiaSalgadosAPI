@@ -22,6 +22,7 @@ model User {
   isActive              Boolean             @default(false)
   address               Address[]
   order                 Order[]
+  auditing              Auditing[]
   notificationToken     UserNotificationToken?  @relation("UserToNotificationToken")
   userActivationCode    UserActivationCode? @relation("UserToActivationCode")  
   createdAt             DateTime            @default(now())
@@ -134,6 +135,8 @@ model Additional {
   description           String              @unique
   price                 Float
   productAdditional     OrderAdditional[]
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
 
   @@schema("sales")
 }
@@ -144,6 +147,19 @@ model OrderAdditional {
   idAdditional          Int
   order                 Order               @relation(fields: [idOrder], references: [idOrder], onDelete: Cascade, onUpdate: Cascade)
   additional            Additional          @relation(fields: [idAdditional], references: [idAdditional])
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@schema("sales")
+}
+
+model Auditing {
+  idAuditing            Int                 @default(autoincrement()) @id
+  idUser                Int
+  action                String              
+  description           String
+  user                  User                @relation(fields: [idUser], references: [idUser], onDelete: NoAction, onUpdate: NoAction)
+  createdAt             DateTime            @default(now())
 
   @@schema("sales")
 }
