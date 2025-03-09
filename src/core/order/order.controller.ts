@@ -66,9 +66,10 @@ export class OrderController {
   @HttpCode(HttpStatus.CREATED)
   updateOrderStatus(
     @Param('orderId') orderId: string,
-    @Param('orderstatus') orderstatus: string
+    @Param('orderstatus') orderstatus: string,
+    @Req() request: FastifyRequest
   ) {
-    return this.orderService.validateUpdateOrderStatus(+orderId, +orderstatus);
+    return this.orderService.validateUpdateOrderStatus(+orderId, +orderstatus, request['userId']);
   }
   
 }

@@ -1,3 +1,4 @@
+import { AuditingModel, DescriptionAuditingModel } from 'src/shared/types/auditing';
 import { Injectable, HttpStatus } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -13,13 +14,15 @@ import { AdditionalItemDto } from './dto/additional-item.dto';
 import { NotificationService } from 'src/service/notification.service';
 import getMessageStatus from './constants/order.messages';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
+import { AuditingService } from 'src/service/auditing.service';
 
 @Injectable()
 export class OrderService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly exceptionHandler: ExceptionHandler,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly auditingService: AuditingService
   ) { }
 
   async create(createOrderDto: CreateOrderDto, userId: number) {
@@ -362,7 +365,7 @@ export class OrderService {
       });
   }
 
-  async validateUpdateOrderStatus(orderId: number, orderstatus: number) {
+  async validateUpdateOrderStatus(orderId: number, orderstatus: number, userId: number) {
     
     const order = await this.prismaService.order.findUnique({
       where: { idOrder: orderId }
@@ -383,7 +386,7 @@ export class OrderService {
           isPending = true;
         }
 
-        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_DELIVERY[orderstatus], isPending, order.typeOfDelivery);
+        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_DELIVERY[orderstatus], isPending, order.typeOfDelivery, userId, order.orderStatus);
       }
 
       case 'RETIRA': {
@@ -394,14 +397,14 @@ export class OrderService {
           isPending = true;
         }
 
-        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_WITHDRAWAL[orderstatus], isPending, order.typeOfDelivery);
+        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_WITHDRAWAL[orderstatus], isPending, order.typeOfDelivery, userId, order.orderStatus);
       }
 
       default: break;
     }
   }
 
-  async updateOrderStatus(orderId: number, orderStatus: string, isPending: boolean, typeOfDelivery: string) {
+  async updateOrderStatus(orderId: number, orderStatus: string, isPending: boolean, typeOfDelivery: string, userId: number, previusOrderStatus: string) {
     return await this.prismaService.order.update({
       where: { idOrder: orderId },
       data: {
@@ -416,6 +419,23 @@ export class OrderService {
       }
     })
       .then(async (order) => {
+
+        const description: DescriptionAuditingModel = {
+          action: "ATUALIZAÇÃO DO STATUS DO PEDIDO",
+          entity: `PEDIDO ID: ${order.idOrder}`,
+          previousValue: previusOrderStatus,
+          newValue: orderStatus
+        };
+
+        const auditingModel: AuditingModel = {
+          idUser: userId,
+          changeType: "ATUALIZAÇÃO",
+          operation: description.action,
+          description: JSON.stringify(description)
+        };
+
+        await this.auditingService.saveAudith(auditingModel);
+
         const userNotificationToken = await this.prismaService.userNotificationToken.findUnique({
           where: { idUser: order.idUser }
         });

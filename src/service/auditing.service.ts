@@ -9,15 +9,14 @@ export class AuditingService {
     ) {}
 
     async saveAudith(auditingModel: AuditingModel) {
-        if(!auditingModel.operation)
-            auditingModel.operation = "OPERAÇÃO NÃO IDENTIFICADA";
-
-        if(!auditingModel.description)
-            auditingModel.description = "ALTERAÇÃO REALIZADA NÃO ESPECIFICADA";
+        if(!auditingModel.changeType) auditingModel.changeType = "TIPO DE ALTERAÇÃO NÃO IDENTIFICADA";
+        if(!auditingModel.operation) auditingModel.operation = "OPERAÇÃO NÃO IDENTIFICADA";
+        if(!auditingModel.description) auditingModel.description = "DESCRIÇÃO DAS ALTERAÇÕES REALIZADAS NÃO ESPECIFICADA";
 
         await this.prismaService.auditing.create({
             data: {
-                idUser: auditingModel.user.idUser,
+                idUser: auditingModel.idUser,
+                changeType: auditingModel.changeType,
                 operation: auditingModel.operation,
                 description: auditingModel.description
             }
