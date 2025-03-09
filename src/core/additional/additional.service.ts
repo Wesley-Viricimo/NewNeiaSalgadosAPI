@@ -26,7 +26,11 @@ export class AdditionalService {
       .then(result => {
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Adicional cadastrado com sucesso!' };
         return {
-          data: result,
+          data: {
+            idAdditional: result.idAdditional,
+            description: result.description,
+            price: result.price
+          },
           message,
           statusCode: HttpStatus.CREATED
         }
