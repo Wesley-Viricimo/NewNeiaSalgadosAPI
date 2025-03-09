@@ -1,7 +1,13 @@
-import { User } from "@prisma/client";
-
 export interface AuditingModel {
-    user: User,
+    idUser: number,
+    entity: string,
     operation: string,
     description: string
+}
+
+export interface DescriptionAuditingModel {
+    idEntity: number,
+    action: string,
+    previousValue: string,
+    newValue: string
 }
