@@ -9,6 +9,7 @@ import { Prisma, Product } from '@prisma/client';
 import { productSelectConfig } from './config/product-select-config';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { S3Service } from 'src/service/aws/handle-fileS3.service';
+import { AuditingService } from 'src/service/auditing.service';
 
 @Injectable()
 export class ProductService {
@@ -16,7 +17,8 @@ export class ProductService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly exceptionHandler: ExceptionHandler,
-    private readonly s3Service: S3Service
+    private readonly s3Service: S3Service,
+    private readonly auditingService: AuditingService
   ) {}
 
   async create(createProductDto: CreateProductDto, file: Express.Multer.File) {
@@ -40,7 +42,9 @@ export class ProductService {
         urlImage
       }
     })
-    .then(result => {
+    .then(async (result) => {
+      await this.auditingService.saveAudithCreateProduct(result);
+
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto cadastrado com sucesso!' };
       return {
         data: result,

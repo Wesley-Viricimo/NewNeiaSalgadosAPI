@@ -1,4 +1,3 @@
-import { AuditingModel, DescriptionAuditingModel } from 'src/shared/types/auditing';
 import { Injectable, HttpStatus } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -404,7 +403,7 @@ export class OrderService {
     }
   }
 
-  async updateOrderStatus(orderId: number, orderStatus: string, isPending: boolean, typeOfDelivery: string, userId: number, previusOrderStatus: string) {
+  async updateOrderStatus(orderId: number, orderStatus: string, isPending: boolean, typeOfDelivery: string, userId: number, previousOrderStatus: string) {
     return await this.prismaService.order.update({
       where: { idOrder: orderId },
       data: {
@@ -420,21 +419,14 @@ export class OrderService {
     })
       .then(async (order) => {
 
-        const description: DescriptionAuditingModel = {
-          action: "ATUALIZAÇÃO DO STATUS DO PEDIDO",
-          entity: `PEDIDO ID: ${order.idOrder}`,
-          previousValue: previusOrderStatus,
-          newValue: orderStatus
-        };
-
-        const auditingModel: AuditingModel = {
+        const updateOrderStatusModel = {
+          idOrder: order.idOrder,
           idUser: userId,
-          changeType: "ATUALIZAÇÃO",
-          operation: description.action,
-          description: JSON.stringify(description)
-        };
+          previousValue: previousOrderStatus,
+          newValue: order.orderStatus
+        }
 
-        await this.auditingService.saveAudith(auditingModel);
+        await this.auditingService.saveAudithUpdateOrderStatus(updateOrderStatusModel);
 
         const userNotificationToken = await this.prismaService.userNotificationToken.findUnique({
           where: { idUser: order.idUser }

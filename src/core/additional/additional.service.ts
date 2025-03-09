@@ -18,6 +18,11 @@ export class AdditionalService {
     await this.validateFieldsCreateAdditional(createAdditionalDto);
 
     return await this.prismaService.additional.create({
+      select: {
+        idAdditional: true,
+        description: true,
+        price: true
+      },
       data: {
         description: createAdditionalDto.description,
         price: createAdditionalDto.price
@@ -26,11 +31,7 @@ export class AdditionalService {
       .then(result => {
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Adicional cadastrado com sucesso!' };
         return {
-          data: {
-            idAdditional: result.idAdditional,
-            description: result.description,
-            price: result.price
-          },
+          data: result,
           message,
           statusCode: HttpStatus.CREATED
         }
