@@ -14,14 +14,14 @@ export class AuditingService {
             action: "CADASTRO DE PRODUTO",
             entity: `PRODUTO ID: ${product.idProduct}`,
             previousValue: "",
-            newValue: JSON.stringify(product)
+            newValue: product
         };
 
         const auditingModel: AuditingModel = {
             idUser: idUser,
             changeType: "CREATE",
             operation: description.action,
-            description: JSON.stringify(description)
+            description: description
         }
         
         await this.prismaService.auditing.create({
@@ -29,7 +29,7 @@ export class AuditingService {
                 idUser: idUser,
                 changeType: auditingModel.changeType,
                 operation: auditingModel.operation,
-                description: auditingModel.description
+                description: JSON.stringify(auditingModel.description)
             }
         })
     }
@@ -46,7 +46,7 @@ export class AuditingService {
             idUser: auditingUpdateOrderStatusModel.idUser,
             changeType: "UPDATE",
             operation: description.action,
-            description: JSON.stringify(description)
+            description: description
         }
 
         await this.prismaService.auditing.create({
@@ -54,7 +54,7 @@ export class AuditingService {
                 idUser: auditingModel.idUser,
                 changeType: auditingModel.changeType,
                 operation: auditingModel.operation,
-                description: auditingModel.description
+                description: JSON.stringify(auditingModel.description)
             }
         })
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, HttpCode, HttpStatus, Query, Req } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -7,6 +7,7 @@ import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { Product } from './entities/product.entity';
 import { FileFastifyInterceptor } from "fastify-file-interceptor";
+import { FastifyRequest } from 'fastify';
 
 @Controller('api/v1/product')
 export class ProductController {
@@ -16,8 +17,12 @@ export class ProductController {
   @HttpCode(HttpStatus.CREATED)
   @Post()
   @UseInterceptors(FileFastifyInterceptor('product-image'))
-  create(@Body() createProductDto: CreateProductDto, @UploadedFile() file: Express.Multer.File) {
-    return this.productService.create(createProductDto, file);
+  create(
+    @Body() createProductDto: CreateProductDto, 
+    @UploadedFile() file: Express.Multer.File,
+    @Req() request: FastifyRequest
+  ) {
+    return this.productService.create(createProductDto, file, request['userId']);
   }
 
   @ApiPaginatedResponse(Product)

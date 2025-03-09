@@ -21,7 +21,7 @@ export class ProductService {
     private readonly auditingService: AuditingService
   ) {}
 
-  async create(createProductDto: CreateProductDto, file: Express.Multer.File) {
+  async create(createProductDto: CreateProductDto, file: Express.Multer.File, idUser: number) {
 
     const selectedFields = productSelectConfig;
 
@@ -43,9 +43,9 @@ export class ProductService {
       }
     })
     .then(async (result) => {
-      await this.auditingService.saveAudithCreateProduct(result);
-
+      await this.auditingService.saveAudithCreateProduct(result, idUser);
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto cadastrado com sucesso!' };
+      
       return {
         data: result,
         message,
