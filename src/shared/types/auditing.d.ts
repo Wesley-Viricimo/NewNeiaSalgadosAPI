@@ -1,6 +1,7 @@
 export interface AuditingModel {
     idUser: number,
     entity: string,
+    changeType: string,
     operation: string,
     description: string
 }

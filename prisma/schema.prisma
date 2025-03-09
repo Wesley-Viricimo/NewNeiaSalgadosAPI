@@ -156,6 +156,7 @@ model OrderAdditional {
 model Auditing {
   idAuditing            Int                 @default(autoincrement()) @id
   idUser                Int
+  changeType            String
   operation             String              
   description           String
   user                  User                @relation(fields: [idUser], references: [idUser], onDelete: NoAction, onUpdate: NoAction)
