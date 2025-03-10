@@ -123,7 +123,7 @@ export class ProductService {
     }
   }
 
-  async update(id: number, updateProductDto: UpdateProductDto, file: Express.Multer.File) {
+  async update(id: number, updateProductDto: UpdateProductDto, file: Express.Multer.File, idUser: number) {
 
     await this.validateFieldsUpdateProduct(updateProductDto, file);
 
@@ -154,15 +154,18 @@ export class ProductService {
         urlImage: urlImage
       }
     })
-    .then(product => {
+    .then(async (result) => {
+
+      await this.auditingService.saveAudithUpdateProduct(product, result, idUser);
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto atualizado com sucesso!' };
+      
       return {
         data: {
-          idProduct: product.idProduct,
-          idCategory: product.idCategory,
-          description: product.description,
-          price: product.price,
-          urlImage: product.urlImage
+          idProduct: result.idProduct,
+          idCategory: result.idCategory,
+          description: result.description,
+          price: result.price,
+          urlImage: result.urlImage
         },
         message,
         statusCode: HttpStatus.CREATED

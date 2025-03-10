@@ -44,8 +44,13 @@ export class ProductController {
   @HttpCode(HttpStatus.CREATED)
   @Patch(':id')
   @UseInterceptors(FileFastifyInterceptor('product-image'))
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto, @UploadedFile() file: Express.Multer.File) {
-    return this.productService.update(+id, updateProductDto, file);
+  update(
+    @Param('id') id: string, 
+    @Body() updateProductDto: UpdateProductDto, 
+    @UploadedFile() file: Express.Multer.File,
+    @Req() request: FastifyRequest
+  ) {
+    return this.productService.update(+id, updateProductDto, file, request['userId']);
   }
 
   @Roles('ADMIN', 'DEV')
