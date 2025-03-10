@@ -20,6 +20,16 @@ export interface AuditingProductModel {
     urlImage: string;
 }
 
+export interface AuditingUserModel {
+    idUser: number;
+    name: string;
+    surname: string;
+    cpf: string;
+    email: string;
+    role: string;
+    isActive: boolean;
+}
+
 export interface AuditingUpdateOrderStatusModel {
     idOrder: number;
     idUser: number;

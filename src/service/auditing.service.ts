@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "src/shared/prisma/prisma.service";
-import { AuditingModel, AuditingProductModel, AuditingUpdateOrderStatusModel, DescriptionAuditingModel } from "src/shared/types/auditing";
+import { AuditingModel, AuditingProductModel, AuditingUpdateOrderStatusModel, AuditingUserModel, DescriptionAuditingModel } from "src/shared/types/auditing";
 
 
 @Injectable()
@@ -9,7 +9,7 @@ export class AuditingService {
         private readonly prismaService: PrismaService
     ) {}
 
-    async saveAudithCreateProduct(product: AuditingProductModel, idUser: number) {
+    async saveAudithCreateProduct(product: AuditingProductModel, idUserAdmin: number) {
         const description: DescriptionAuditingModel = {
             action: "CADASTRO DE PRODUTO",
             entity: `PRODUTO ID: ${product.idProduct}`,
@@ -18,16 +18,16 @@ export class AuditingService {
         };
 
         const auditingModel: AuditingModel = {
-            idUser: idUser,
+            idUser: idUserAdmin,
             changeType: "CREATE",
             operation: description.action,
             description: description
         }
         
-        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description))
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description));
     }
 
-    async saveAudithUpdateProduct(previousProduct: AuditingProductModel, newValueProduct: AuditingProductModel, idUser: number) {
+    async saveAudithUpdateProduct(previousProduct: AuditingProductModel, newValueProduct: AuditingProductModel, idUserAdmin: number) {
         const description: DescriptionAuditingModel = {
             action: "ATUALIZAÇÃO DE PRODUTO",
             entity: `PRODUTO ID: ${newValueProduct.idProduct}`,
@@ -36,16 +36,16 @@ export class AuditingService {
         };
 
         const auditingModel: AuditingModel = {
-            idUser: idUser,
+            idUser: idUserAdmin,
             changeType: "UPDATE",
             operation: description.action,
             description: description
         };
 
-        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description))
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description));
     }
 
-    async saveAudithDeleteProduct(product: AuditingProductModel, idUser: number) {
+    async saveAudithDeleteProduct(product: AuditingProductModel, idUserAdmin: number) {
         const description: DescriptionAuditingModel = {
             action: "EXCLUSÃO DE PRODUTO",
             entity: `PRODUTO ID: ${product.idProduct}`,
@@ -54,13 +54,31 @@ export class AuditingService {
         };
 
         const auditingModel: AuditingModel = {
-            idUser: idUser,
+            idUser: idUserAdmin,
             changeType: "DELETE",
             operation: description.action,
             description: description
         };
 
-        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description))
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description));
+    }
+
+    async saveAudithUpdateUserActivity(previousUser: AuditingUserModel, newUser: AuditingUserModel, idUserAdmin: number) {
+        const description: DescriptionAuditingModel = {
+            action: "ALTERAÇÃO DE STATUS DE USUÁRIO",
+            entity: `USUÁRIO ID: ${previousUser.idUser}`,
+            previousValue: previousUser,
+            newValue: newUser
+        };
+
+        const auditingModel: AuditingModel = {
+            idUser: idUserAdmin,
+            changeType: "UPDATE",
+            operation: description.action,
+            description: description
+        };
+
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description));
     }
 
     async saveAudithUpdateOrderStatus(auditingUpdateOrderStatusModel: AuditingUpdateOrderStatusModel) {

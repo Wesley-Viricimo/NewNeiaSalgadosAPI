@@ -78,8 +78,12 @@ export class UserController {
   @Roles('ADMIN', 'DEV')
   @Patch('changeUserActivity/:id')
   @HttpCode(HttpStatus.CREATED)
-  changeUserActivity(@Param('id') id: string, @Body() changeUserStatusDTO: ChangeUserStatusDTO) {
-    return this.userService.changeUserActivity(+id, changeUserStatusDTO);
+  changeUserActivity(
+    @Param('id') id: string, 
+    @Body() changeUserStatusDTO: ChangeUserStatusDTO,
+    @Req() request: FastifyRequest
+  ) {
+    return this.userService.changeUserActivity(+id, changeUserStatusDTO, request['userId']);
   }
 
   @Post('save-notificationToken')

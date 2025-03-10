@@ -5,6 +5,7 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ErrorExceptionFilters } from 'src/shared/utils/httpResponseService/errorResponse.service';
 import { EmailService } from 'src/service/aws/send-email.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
+import { AuditingService } from 'src/service/auditing.service';
 
 @Module({
   controllers: [UserController],
@@ -13,7 +14,8 @@ import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler
     ErrorExceptionFilters,
     PrismaService,
     EmailService,
-    ExceptionHandler
+    ExceptionHandler,
+    AuditingService
   ],
 })
 export class UserModule {}

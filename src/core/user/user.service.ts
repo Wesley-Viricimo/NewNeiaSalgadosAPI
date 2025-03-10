@@ -15,6 +15,7 @@ import { ROLES } from './constants/users.constants';
 import { MailResendDto } from './dto/mail-resend-dto';
 import { EmailService } from 'src/service/aws/send-email.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
+import { AuditingService } from 'src/service/auditing.service';
 
 @Injectable()
 export class UserService {
@@ -22,7 +23,8 @@ export class UserService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly emailService: EmailService,
-    private readonly exceptionHandler: ExceptionHandler
+    private readonly exceptionHandler: ExceptionHandler,
+    private readonly auditingService: AuditingService
   ) {}
   
   async create(user: CreateUserDto) {
@@ -332,7 +334,7 @@ export class UserService {
     }
   }
 
-  async changeUserActivity(id: number, changeUserStatusDTO: ChangeUserStatusDTO) {
+  async changeUserActivity(id: number, changeUserStatusDTO: ChangeUserStatusDTO, idUser: number) {
     
     const user = await this.prismaService.user.findUnique({
       where: { idUser: id }
@@ -347,8 +349,10 @@ export class UserService {
       data: { isActive: changeUserStatusDTO.isActive },
       select: selectedFields
     })
-    .then(result => {
+    .then(async (result) => {
+      await this.auditingService.saveAudithUpdateUserActivity(user, result, idUser);
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Atividade do usuário atualizada com sucesso!' };
+      
       return {
         data: result,
         message,
