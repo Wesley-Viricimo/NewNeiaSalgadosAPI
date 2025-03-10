@@ -56,7 +56,10 @@ export class ProductController {
   @Roles('ADMIN', 'DEV')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  delete(@Param('id') id: string) {
-    return this.productService.delete(+id);
+  delete(
+    @Param('id') id: string,
+    @Req() request: FastifyRequest
+  ) {
+    return this.productService.delete(+id, request['userId']);
   }
 }

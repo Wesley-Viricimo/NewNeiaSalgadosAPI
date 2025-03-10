@@ -193,7 +193,7 @@ export class ProductService {
     }
   }
 
-  async delete(id: number) {
+  async delete(id: number, idUser: number) {
     const product = await this.prismaService.product.findUnique({
       where: { idProduct: id }
     });
@@ -205,6 +205,9 @@ export class ProductService {
 
     return await this.prismaService.product.delete({
       where: { idProduct: id }
+    })
+    .then(async (product) => {
+      await this.auditingService.saveAudithDeleteProduct(product, idUser);
     })
     .catch(() => {
       this.exceptionHandler.errorBadRequestResponse('Erro ao excluir produto!');

@@ -59,6 +59,31 @@ export class AuditingService {
         })
     }
 
+    async saveAudithDeleteProduct(product: AuditingProductModel, idUser: number) {
+        const description: DescriptionAuditingModel = {
+            action: "EXCLUSÃO DE PRODUTO",
+            entity: `PRODUTO ID: ${product.idProduct}`,
+            previousValue: product,
+            newValue: ""
+        };
+
+        const auditingModel: AuditingModel = {
+            idUser: idUser,
+            changeType: "DELETE",
+            operation: description.action,
+            description: description
+        };
+
+        await this.prismaService.auditing.create({
+            data: {
+                idUser: auditingModel.idUser,
+                changeType: auditingModel.changeType,
+                operation: auditingModel.operation,
+                description: JSON.stringify(auditingModel.description)
+            }
+        })
+    }
+
     async saveAudithUpdateOrderStatus(auditingUpdateOrderStatusModel: AuditingUpdateOrderStatusModel) {
         const description: DescriptionAuditingModel = {
             action: "ATUALIZAÇÃO DO STATUS DO PEDIDO",
