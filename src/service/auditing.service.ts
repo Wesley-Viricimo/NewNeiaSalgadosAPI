@@ -24,14 +24,7 @@ export class AuditingService {
             description: description
         }
         
-        await this.prismaService.auditing.create({
-            data: {
-                idUser: idUser,
-                changeType: auditingModel.changeType,
-                operation: auditingModel.operation,
-                description: JSON.stringify(auditingModel.description)
-            }
-        })
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description))
     }
 
     async saveAudithUpdateProduct(previousProduct: AuditingProductModel, newValueProduct: AuditingProductModel, idUser: number) {
@@ -49,14 +42,7 @@ export class AuditingService {
             description: description
         };
 
-        await this.prismaService.auditing.create({
-            data: {
-                idUser: auditingModel.idUser,
-                changeType: auditingModel.changeType,
-                operation: auditingModel.operation,
-                description: JSON.stringify(auditingModel.description)
-            }
-        })
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description))
     }
 
     async saveAudithDeleteProduct(product: AuditingProductModel, idUser: number) {
@@ -74,14 +60,7 @@ export class AuditingService {
             description: description
         };
 
-        await this.prismaService.auditing.create({
-            data: {
-                idUser: auditingModel.idUser,
-                changeType: auditingModel.changeType,
-                operation: auditingModel.operation,
-                description: JSON.stringify(auditingModel.description)
-            }
-        })
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description))
     }
 
     async saveAudithUpdateOrderStatus(auditingUpdateOrderStatusModel: AuditingUpdateOrderStatusModel) {
@@ -99,14 +78,17 @@ export class AuditingService {
             description: description
         }
 
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description))
+    }
+
+    async saveAuditing(idUser: number, changeType: string, operation: string, description: string) {
         await this.prismaService.auditing.create({
             data: {
-                idUser: auditingModel.idUser,
-                changeType: auditingModel.changeType,
-                operation: auditingModel.operation,
-                description: JSON.stringify(auditingModel.description)
+                idUser: idUser,
+                changeType: changeType,
+                operation: operation,
+                description: description
             }
         })
-
     }
 }
