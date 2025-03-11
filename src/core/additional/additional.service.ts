@@ -4,16 +4,18 @@ import { UpdateAdditionalDto } from './dto/update-additional.dto';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { Additional } from '@prisma/client';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
+import { AuditingService } from 'src/service/auditing.service';
 
 @Injectable()
 export class AdditionalService {
 
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly exceptionHandler: ExceptionHandler
+    private readonly exceptionHandler: ExceptionHandler,
+    private readonly auditingService: AuditingService
   ) { }
 
-  async create(createAdditionalDto: CreateAdditionalDto) {
+  async create(createAdditionalDto: CreateAdditionalDto, idUser: number) {
 
     await this.validateFieldsCreateAdditional(createAdditionalDto);
 
@@ -28,8 +30,10 @@ export class AdditionalService {
         price: createAdditionalDto.price
       }
     })
-      .then(result => {
+      .then(async (result) => {
+        await this.auditingService.saveAudithCreateAdditional(result, idUser);
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Adicional cadastrado com sucesso!' };
+
         return {
           data: result,
           message,
@@ -51,7 +55,7 @@ export class AdditionalService {
     if (existsAdditional) this.exceptionHandler.errorBadRequestResponse('Adicional já cadastrado no sistema!');
   }
 
-  async update(id: number, updateAdditionalDto: UpdateAdditionalDto) {
+  async update(id: number, updateAdditionalDto: UpdateAdditionalDto, idUser: number) {
 
     const additional = await this.prismaService.additional.findUnique({
       where: { idAdditional: id }
@@ -68,8 +72,10 @@ export class AdditionalService {
         price: updateAdditionalDto.price
       }
     })
-      .then(result => {
+      .then(async (result) => {
+        await this.auditingService.saveAudithUpdateAdditional(additional, result, idUser);
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Adicional atualizado com sucesso!' };
+
         return {
           data: result,
           message,
@@ -112,7 +118,7 @@ export class AdditionalService {
     }
   }
 
-  async remove(id: number) {
+  async remove(id: number, idUser: number) {
     const additional = await this.prismaService.additional.findUnique({
       where: { idAdditional: id }
     });
@@ -133,6 +139,9 @@ export class AdditionalService {
 
     return await this.prismaService.additional.delete({
       where: { idAdditional: id }
+    })
+    .then(async (result) => {
+      await this.auditingService.saveAudithDeleteAdditional(result, idUser);
     })
     .catch(() => {
       this.exceptionHandler.errorBadRequestResponse('Erro ao excluir adicional!');

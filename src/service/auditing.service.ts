@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "src/shared/prisma/prisma.service";
-import { AuditingModel, AuditingProductModel, AuditingUpdateOrderStatusModel, AuditingUserModel, DescriptionAuditingModel } from "src/shared/types/auditing";
+import { AuditingAdditionalModel, AuditingModel, AuditingProductModel, AuditingUpdateOrderStatusModel, AuditingUserModel, DescriptionAuditingModel } from "src/shared/types/auditing";
 
 
 @Injectable()
@@ -79,6 +79,60 @@ export class AuditingService {
         };
 
         await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description));
+    }
+
+    async saveAudithCreateAdditional(additional: AuditingAdditionalModel, idUserAdmin: number) {
+        const description: DescriptionAuditingModel = {
+            action: "CADASTRO DE ADICIONAL",
+            entity: `ADICIONAL ID: ${additional.idAdditional}`,
+            previousValue: "",
+            newValue: additional
+        };
+
+        const auditingModel: AuditingModel = {
+            idUser: idUserAdmin,
+            changeType: "CREATE",
+            operation: description.action,
+            description: description
+        };
+
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description))
+    }
+
+    async saveAudithUpdateAdditional(previousAdditional: AuditingAdditionalModel, newAdditional: AuditingAdditionalModel, idUserAdmin: number) {
+        const description: DescriptionAuditingModel = { 
+            action: "ATUALIZAÇÃO DE ADICIONAL",
+            entity: `ADICIONAL ID: ${previousAdditional.idAdditional}`,
+            previousValue: previousAdditional,
+            newValue: newAdditional
+        };
+
+        const auditingModel: AuditingModel = {
+            idUser: idUserAdmin,
+            changeType: "UPDATE",
+            operation: description.action,
+            description: description
+        };
+
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description));
+    }
+
+    async saveAudithDeleteAdditional(additional: AuditingAdditionalModel, idUserAdmin: number) {
+        const description: DescriptionAuditingModel = { 
+            action: "EXCLUSÃO DE ADICIONAL",
+            entity: `ADICIONAL ID: ${additional.idAdditional}`,
+            previousValue: additional,
+            newValue: ""
+        };
+
+        const auditingModel: AuditingModel = {
+            idUser: idUserAdmin,
+            changeType: "DELETE",
+            operation: description.action,
+            description: description
+        };
+
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description))
     }
 
     async saveAudithUpdateOrderStatus(auditingUpdateOrderStatusModel: AuditingUpdateOrderStatusModel) {

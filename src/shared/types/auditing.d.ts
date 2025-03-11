@@ -30,6 +30,12 @@ export interface AuditingUserModel {
     isActive: boolean;
 }
 
+export interface AuditingAdditionalModel {
+    idAdditional: number;
+    description: string;
+    price: number;
+}
+
 export interface AuditingUpdateOrderStatusModel {
     idOrder: number;
     idUser: number;
