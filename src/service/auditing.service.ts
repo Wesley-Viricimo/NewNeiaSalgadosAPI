@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "src/shared/prisma/prisma.service";
-import { AuditingAdditionalModel, AuditingModel, AuditingProductModel, AuditingUpdateOrderStatusModel, AuditingUserModel, DescriptionAuditingModel } from "src/shared/types/auditing";
+import { AuditingAdditionalModel, AuditingCategoryModel, AuditingModel, AuditingProductModel, AuditingUpdateOrderStatusModel, AuditingUserModel, DescriptionAuditingModel } from "src/shared/types/auditing";
 
 
 @Injectable()
@@ -132,7 +132,61 @@ export class AuditingService {
             description: description
         };
 
-        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description))
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description));
+    }
+
+    async saveAudithCreateCategory(category: AuditingCategoryModel, idUserAdmin: number) {
+        const description: DescriptionAuditingModel = { 
+            action: "CADASTRO DE CATEGORIA",
+            entity: `CATEGORIA ID: ${category.idCategory}`,
+            previousValue: "",
+            newValue: category
+        };
+
+        const auditingModel: AuditingModel = {
+            idUser: idUserAdmin,
+            changeType: "CREATE",
+            operation: description.action,
+            description: description
+        };
+
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description));
+    }
+
+    async saveAudithUpdateCategory(previousCategory: AuditingCategoryModel, newCategory: AuditingCategoryModel, idUserAdmin: number) {
+        const description: DescriptionAuditingModel = { 
+            action: "ATUALIZAÇÃO DE CATEGORIA",
+            entity: `CATEGORIA ID: ${previousCategory.idCategory}`,
+            previousValue: previousCategory,
+            newValue: newCategory
+        };
+
+        const auditingModel: AuditingModel = {
+            idUser: idUserAdmin,
+            changeType: "UPDATE",
+            operation: description.action,
+            description: description
+        };
+
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description));
+    }
+
+    async saveAudithDeleteCategory(category: AuditingCategoryModel, idUserAdmin: number) {
+        const description: DescriptionAuditingModel = { 
+            action: "EXCLUSÃO DE CATEGORIA",
+            entity: `CATEGORIA ID: ${category.idCategory}`,
+            previousValue: category,
+            newValue: ""
+        };
+
+        const auditingModel: AuditingModel = {
+            idUser: idUserAdmin,
+            changeType: "DELETE",
+            operation: description.action,
+            description: description
+        };
+
+        await this.saveAuditing(auditingModel.idUser, auditingModel.changeType, auditingModel.operation, JSON.stringify(auditingModel.description));
     }
 
     async saveAudithUpdateOrderStatus(auditingUpdateOrderStatusModel: AuditingUpdateOrderStatusModel) {

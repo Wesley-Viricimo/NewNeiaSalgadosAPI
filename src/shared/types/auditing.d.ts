@@ -36,6 +36,11 @@ export interface AuditingAdditionalModel {
     price: number;
 }
 
+export interface AuditingCategoryModel {
+    idCategory: number;
+    description: string;
+}
+
 export interface AuditingUpdateOrderStatusModel {
     idOrder: number;
     idUser: number;

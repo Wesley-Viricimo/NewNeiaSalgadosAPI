@@ -4,15 +4,17 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { Category } from '@prisma/client';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
+import { AuditingService } from 'src/service/auditing.service';
 
 @Injectable()
 export class CategoryService {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly exceptionHandler: ExceptionHandler
+    private readonly exceptionHandler: ExceptionHandler,
+    private readonly auditingService: AuditingService
   ) {}
 
-  async create(createCategoryDto: CreateCategoryDto) {
+  async create(createCategoryDto: CreateCategoryDto, idUser: number) {
     const categoryExists = await this.prismaService.category.findFirst({
       where: {
         description: {
@@ -29,8 +31,10 @@ export class CategoryService {
       data: {
         description: createCategoryDto.description
       }
-    }).then(result => {
+    }).then(async (result) => {
+      await this.auditingService.saveAudithCreateCategory(result, idUser);
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Categoria cadastrada com sucesso!' };
+      
       return {
         data: result,
         message,
@@ -82,7 +86,7 @@ export class CategoryService {
     }
   }
 
-  async update(id: number, updateCategoryDto: UpdateCategoryDto) {
+  async update(id: number, updateCategoryDto: UpdateCategoryDto, idUser: number) {
     
     const category = await this.prismaService.category.findUnique({
       where: { idCategory: id }
@@ -99,12 +103,14 @@ export class CategoryService {
         description: updateCategoryDto.description
       }
     })
-    .then(category => {
+    .then(async (result) => {
+      await this.auditingService.saveAudithUpdateCategory(category, result, idUser);
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Categoria atualizada com sucesso!' };
+      
       return {
         data: {
-          idCategory: category.idCategory,
-          desciption: category.description
+          idCategory: result.idCategory,
+          desciption: result.description
         },
         message,
         statusCode: HttpStatus.CREATED
@@ -115,7 +121,7 @@ export class CategoryService {
     });
   }
 
-  async delete(id: number) {
+  async delete(id: number, idUser: number) {
     const category = await this.prismaService.category.findUnique({
       where: { idCategory: id }
     });
@@ -130,7 +136,11 @@ export class CategoryService {
 
     return await this.prismaService.category.delete({
       where: { idCategory: id }
-    }).catch(() => {
+    })
+    .then(async (result) => {
+      await this.auditingService.saveAudithDeleteCategory(result, idUser);
+    })
+    .catch(() => {
       this.exceptionHandler.errorBadRequestResponse('Erro ao excluir categoria!');
     })
   }

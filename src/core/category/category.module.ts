@@ -4,6 +4,7 @@ import { CategoryController } from './category.controller';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ErrorExceptionFilters } from 'src/shared/utils/httpResponseService/errorResponse.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
+import { AuditingService } from 'src/service/auditing.service';
 
 @Module({
   controllers: [CategoryController],
@@ -11,7 +12,8 @@ import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler
     CategoryService,
     ErrorExceptionFilters,
     PrismaService,
-    ExceptionHandler
+    ExceptionHandler,
+    AuditingService
   ],
 })
 export class CategoryModule {}

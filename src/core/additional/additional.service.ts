@@ -123,7 +123,7 @@ export class AdditionalService {
       where: { idAdditional: id }
     });
 
-    if(!additional) this.exceptionHandler.errorNotFoundResponse(`Esta categoria não está cadastrada no sistema!`);
+    if(!additional) this.exceptionHandler.errorNotFoundResponse(`Este adicional não está cadastrado no sistema!`);
 
     const ordersAdditional = await this.prismaService.orderAdditional.findMany({
       where: { idAdditional: id }
