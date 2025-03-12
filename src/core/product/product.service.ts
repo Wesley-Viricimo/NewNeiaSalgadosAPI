@@ -107,13 +107,13 @@ export class ProductService {
     }); 
 
     if(!product) this.exceptionHandler.errorNotFoundResponse('Este produto não está cadastrado no sistema!');
-
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto listado com sucesso!' };
 
     return {
       data: {
         idProduct: product.idProduct,
         idCategory: product.idCategory,
+        title: product.title,
         description: product.description,
         price: product.price,
         urlImage: product.urlImage
@@ -155,7 +155,6 @@ export class ProductService {
       }
     })
     .then(async (result) => {
-
       await this.auditingService.saveAudithUpdateProduct(product, result, idUser);
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto atualizado com sucesso!' };
       
@@ -163,6 +162,7 @@ export class ProductService {
         data: {
           idProduct: result.idProduct,
           idCategory: result.idCategory,
+          title: result.title,
           description: result.description,
           price: result.price,
           urlImage: result.urlImage
@@ -177,6 +177,8 @@ export class ProductService {
   }
 
   private async validateFieldsUpdateProduct(updateProductDto: UpdateProductDto, file: Express.Multer.File) {
+    if(!updateProductDto.title) this.exceptionHandler.errorBadRequestResponse("Título do produdo não pode ser vazio!");
+
     if(file) 
       if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG, JPEG ou PNG!`);
 
