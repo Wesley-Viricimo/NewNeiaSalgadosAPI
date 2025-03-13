@@ -32,7 +32,17 @@ export class CategoryService {
         description: createCategoryDto.description
       }
     }).then(async (result) => {
-      await this.auditingService.saveAudithCreateCategory(result, idUser);
+
+      await this.auditingService.saveAudit({
+        idUser: idUser,
+        action: "CADASTRO DE CATEGORIA",
+        entityType: "CATEGORIA",
+        changeType: "CREATE",
+        entityId: result.idCategory,
+        previousValue: "",
+        newValue: result
+      });
+
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Categoria cadastrada com sucesso!' };
       
       return {
@@ -104,7 +114,17 @@ export class CategoryService {
       }
     })
     .then(async (result) => {
-      await this.auditingService.saveAudithUpdateCategory(category, result, idUser);
+
+      await this.auditingService.saveAudit({
+        idUser: idUser,
+        action: "ATUALIZAÇÃO DE CATEGORIA",
+        entityType: "CATEGORIA",
+        changeType: "UPDATE",
+        entityId: result.idCategory,
+        previousValue: category,
+        newValue: result
+      });
+
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Categoria atualizada com sucesso!' };
       
       return {
@@ -138,7 +158,17 @@ export class CategoryService {
       where: { idCategory: id }
     })
     .then(async (result) => {
-      await this.auditingService.saveAudithDeleteCategory(result, idUser);
+
+      await this.auditingService.saveAudit({
+        idUser: idUser,
+        action: "EXCLUSÃO DE CATEGORIA",
+        entityType: "CATEGORIA",
+        changeType: "DELETE",
+        entityId: result.idCategory,
+        previousValue: category,
+        newValue: ""
+      });
+
     })
     .catch(() => {
       this.exceptionHandler.errorBadRequestResponse('Erro ao excluir categoria!');

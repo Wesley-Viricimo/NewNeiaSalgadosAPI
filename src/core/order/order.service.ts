@@ -419,14 +419,15 @@ export class OrderService {
     })
       .then(async (order) => {
 
-        const updateOrderStatusModel = {
-          idOrder: order.idOrder,
+        await this.auditingService.saveAudit({
           idUser: userId,
+          action: "ATUALIZAÇÃO DE STATUS DE PEDIDO",
+          entityType: "PEDIDO",
+          changeType: "UPDATE",
+          entityId: order.idOrder,
           previousValue: previousOrderStatus,
           newValue: order.orderStatus
-        }
-
-        await this.auditingService.saveAudithUpdateOrderStatus(updateOrderStatusModel);
+        });
 
         const userNotificationToken = await this.prismaService.userNotificationToken.findUnique({
           where: { idUser: order.idUser }

@@ -12,38 +12,12 @@ export interface AuditingModel {
     description: Object;
 }
 
-export interface AuditingProductModel {
-    description: string;
-    price: number;
-    idProduct: number;
-    title: string;
-    urlImage: string;
-}
-
-export interface AuditingUserModel {
+export interface ActionAuditingModel {
     idUser: number;
-    name: string;
-    surname: string;
-    cpf: string;
-    email: string;
-    role: string;
-    isActive: boolean;
-}
-
-export interface AuditingAdditionalModel {
-    idAdditional: number;
-    description: string;
-    price: number;
-}
-
-export interface AuditingCategoryModel {
-    idCategory: number;
-    description: string;
-}
-
-export interface AuditingUpdateOrderStatusModel {
-    idOrder: number;
-    idUser: number;
-    previousValue: string;
-    newValue: string;
-}
+    action: string;
+    entityType: string;
+    entityId: number;
+    previousValue: string | object;
+    newValue: string | object;
+    changeType: string;
+  }
