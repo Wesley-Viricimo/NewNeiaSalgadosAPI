@@ -10,6 +10,7 @@ import { productSelectConfig } from './config/product-select-config';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { S3Service } from 'src/service/aws/handle-fileS3.service';
 import { AuditingService } from 'src/service/auditing.service';
+import { ActionAuditingModel } from 'src/shared/types/auditing';
 
 @Injectable()
 export class ProductService {
@@ -43,7 +44,17 @@ export class ProductService {
       }
     })
     .then(async (result) => {
-      await this.auditingService.saveAudithCreateProduct(result, idUser);
+      
+      await this.auditingService.saveAudit({
+              idUser: idUser,
+              action: "CADASTRO DE PRODUTO",
+              entityType: "PRODUTO",
+              changeType: "CREATE",
+              entityId: result.idProduct,
+              previousValue: "",
+              newValue: result
+      } as ActionAuditingModel);
+
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto cadastrado com sucesso!' };
       
       return {
@@ -155,7 +166,17 @@ export class ProductService {
       }
     })
     .then(async (result) => {
-      await this.auditingService.saveAudithUpdateProduct(product, result, idUser);
+
+      await this.auditingService.saveAudit({
+        idUser: idUser,
+        action: "ATUALIZAÇÃO DE PRODUTO",
+        entityType: "PRODUTO",
+        changeType: "UPDATE",
+        entityId: result.idProduct,
+        previousValue: product,
+        newValue: result
+      } as ActionAuditingModel);
+
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto atualizado com sucesso!' };
       
       return {
@@ -209,7 +230,16 @@ export class ProductService {
       where: { idProduct: id }
     })
     .then(async (product) => {
-      await this.auditingService.saveAudithDeleteProduct(product, idUser);
+      await this.auditingService.saveAudit({
+        idUser: idUser,
+        action: "EXCLUSÃO DE PRODUTO",
+        entityType: "PRODUTO",
+        changeType: "DELETE",
+        entityId: product.idProduct,
+        previousValue: product,
+        newValue: ""
+      } as ActionAuditingModel);
+      
     })
     .catch(() => {
       this.exceptionHandler.errorBadRequestResponse('Erro ao excluir produto!');

@@ -5,6 +5,7 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { Additional } from '@prisma/client';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
+import { ActionAuditingModel } from 'src/shared/types/auditing';
 
 @Injectable()
 export class AdditionalService {
@@ -31,7 +32,17 @@ export class AdditionalService {
       }
     })
       .then(async (result) => {
-        await this.auditingService.saveAudithCreateAdditional(result, idUser);
+
+        await this.auditingService.saveAudit({
+                idUser: idUser,
+                action: "CADASTRO DE ADICIONAL",
+                entityType: "ADICIONAL",
+                changeType: "CREATE",
+                entityId: result.idAdditional,
+                previousValue: "",
+                newValue: result
+        } as ActionAuditingModel);
+
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Adicional cadastrado com sucesso!' };
 
         return {
@@ -73,7 +84,16 @@ export class AdditionalService {
       }
     })
       .then(async (result) => {
-        await this.auditingService.saveAudithUpdateAdditional(additional, result, idUser);
+        await this.auditingService.saveAudit({
+          idUser: idUser,
+          action: "ATUALIZAÇÃO DE ADICIONAL",
+          entityType: "ADICIONAL",
+          changeType: "UPDATE",
+          entityId: result.idAdditional,
+          previousValue: additional,
+          newValue: result
+        } as ActionAuditingModel);
+
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Adicional atualizado com sucesso!' };
 
         return {
@@ -141,7 +161,16 @@ export class AdditionalService {
       where: { idAdditional: id }
     })
     .then(async (result) => {
-      await this.auditingService.saveAudithDeleteAdditional(result, idUser);
+      await this.auditingService.saveAudit({
+        idUser: idUser,
+        action: "EXCLUSÃO DE ADICIONAL",
+        entityType: "ADICIONAL",
+        changeType: "DELETE",
+        entityId: result.idAdditional,
+        previousValue: additional,
+        newValue: ""
+      } as ActionAuditingModel);
+
     })
     .catch(() => {
       this.exceptionHandler.errorBadRequestResponse('Erro ao excluir adicional!');

@@ -5,6 +5,7 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { Category } from '@prisma/client';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
+import { ActionAuditingModel } from 'src/shared/types/auditing';
 
 @Injectable()
 export class CategoryService {
@@ -41,7 +42,7 @@ export class CategoryService {
         entityId: result.idCategory,
         previousValue: "",
         newValue: result
-      });
+      } as ActionAuditingModel);
 
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Categoria cadastrada com sucesso!' };
       
@@ -123,7 +124,7 @@ export class CategoryService {
         entityId: result.idCategory,
         previousValue: category,
         newValue: result
-      });
+      } as ActionAuditingModel);
 
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Categoria atualizada com sucesso!' };
       
@@ -167,7 +168,7 @@ export class CategoryService {
         entityId: result.idCategory,
         previousValue: category,
         newValue: ""
-      });
+      } as ActionAuditingModel);
 
     })
     .catch(() => {

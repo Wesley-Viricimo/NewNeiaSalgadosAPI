@@ -14,6 +14,7 @@ import { NotificationService } from 'src/service/notification.service';
 import getMessageStatus from './constants/order.messages';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
+import { ActionAuditingModel } from 'src/shared/types/auditing';
 
 @Injectable()
 export class OrderService {
@@ -427,7 +428,7 @@ export class OrderService {
           entityId: order.idOrder,
           previousValue: previousOrderStatus,
           newValue: order.orderStatus
-        });
+        } as ActionAuditingModel);
 
         const userNotificationToken = await this.prismaService.userNotificationToken.findUnique({
           where: { idUser: order.idUser }

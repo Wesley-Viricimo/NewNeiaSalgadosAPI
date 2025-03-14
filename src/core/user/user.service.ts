@@ -16,6 +16,7 @@ import { MailResendDto } from './dto/mail-resend-dto';
 import { EmailService } from 'src/service/aws/send-email.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
+import { ActionAuditingModel } from 'src/shared/types/auditing';
 
 @Injectable()
 export class UserService {
@@ -350,7 +351,17 @@ export class UserService {
       select: selectedFields
     })
     .then(async (result) => {
-      await this.auditingService.saveAudithUpdateUserActivity(user, result, idUser);
+      
+      await this.auditingService.saveAudit({
+              idUser: idUser,
+              action: "ATUALIZAÇÃO DE ATIVIDADE DE USUÁRIO",
+              entityType: "USER",
+              changeType: "UPDATE",
+              entityId: result.idUser,
+              previousValue: user,
+              newValue: result
+      } as ActionAuditingModel);
+
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Atividade do usuário atualizada com sucesso!' };
       
       return {
