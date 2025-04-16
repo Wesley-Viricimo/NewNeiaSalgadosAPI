@@ -43,7 +43,7 @@ export class AuthService {
           token: await this.tokenService.createToken(payload)
         },
         message,
-        status: HttpStatus.CREATED
+        statusCode: HttpStatus.CREATED
       };
     } else {
       this.exceptionHandler.errorUnauthorizedResponse('Nome de usuário ou senha incorretos. Verifique e tente novamente.');
