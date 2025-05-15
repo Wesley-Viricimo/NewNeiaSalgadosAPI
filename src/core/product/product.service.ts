@@ -20,7 +20,7 @@ export class ProductService {
     private readonly exceptionHandler: ExceptionHandler,
     private readonly s3Service: S3Service,
     private readonly auditingService: AuditingService
-  ) {}
+  ) { }
 
   async create(createProductDto: CreateProductDto, file: Express.Multer.File, idUser: number) {
 
@@ -30,9 +30,9 @@ export class ProductService {
 
     let urlImage: string | null = null;
 
-    if(file)
+    if (file)
       urlImage = await this.s3Service.uploadFile(file);
-    
+
     return await this.prismaService.product.create({
       select: selectedFields,
       data: {
@@ -43,81 +43,87 @@ export class ProductService {
         urlImage
       }
     })
-    .then(async (result) => {
-      
-      await this.auditingService.saveAudit({
-              idUser: idUser,
-              action: "CADASTRO DE PRODUTO",
-              entityType: "PRODUTO",
-              changeType: "CREATE",
-              entityId: result.idProduct,
-              previousValue: "",
-              newValue: result
-      } as ActionAuditingModel);
+      .then(async (result) => {
 
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto cadastrado com sucesso!' };
-      
-      return {
-        data: result,
-        message,
-        statusCode: HttpStatus.CREATED
-      };
-    })
-    .catch(() => {
-      this.exceptionHandler.errorBadRequestResponse('Erro ao cadastrar produto!');
-    });
+        await this.auditingService.saveAudit({
+          idUser: idUser,
+          action: "CADASTRO DE PRODUTO",
+          entityType: "PRODUTO",
+          changeType: "CREATE",
+          entityId: result.idProduct,
+          previousValue: "",
+          newValue: result
+        } as ActionAuditingModel);
+
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto cadastrado com sucesso!' };
+
+        return {
+          data: result,
+          message,
+          statusCode: HttpStatus.CREATED
+        };
+      })
+      .catch(() => {
+        this.exceptionHandler.errorBadRequestResponse('Erro ao cadastrar produto!');
+      });
   }
 
   private async validateFieldsCreateProduct(createProductDto: CreateProductDto, file: Express.Multer.File) {
-    if(file) 
-      if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
+    if (file)
+      if (!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
 
-    if(isNaN(Number(createProductDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
+    if (isNaN(Number(createProductDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
 
     const existsProduct = await this.prismaService.product.findUnique({
       where: { title: createProductDto.title }
     });
 
-    if(existsProduct) this.exceptionHandler.errorBadRequestResponse('Produto já cadastrado no sistema!');
+    if (existsProduct) this.exceptionHandler.errorBadRequestResponse('Produto já cadastrado no sistema!');
 
     const existsCategory = await this.prismaService.category.findUnique({
       where: { idCategory: Number(createProductDto.idCategory) }
     });
 
-    if(!existsCategory) this.exceptionHandler.errorBadRequestResponse('Categoria não cadastrada no sistema!');
+    if (!existsCategory) this.exceptionHandler.errorBadRequestResponse('Categoria não cadastrada no sistema!');
   }
 
-  async findAll(page: number, perPage: number, title: string): Promise<PaginatedOutputDto<Object>> {
+  async findAll(page: number, perPage: number, title: string, description: string, category: number): Promise<PaginatedOutputDto<Object>> {
 
     const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
 
     const selectedFields = productSelectConfig;
 
+    const where: Prisma.ProductWhereInput = {};
+
+    if (title) where.title = { contains: title, mode: 'insensitive' };
+    if (description) where.description = { contains: description, mode: 'insensitive' };
+    if (category) where.idCategory = Number(category);
+
     return await paginate<Product, Prisma.ProductFindManyArgs>(
       this.prismaService.product,
       {
-        where:  { description: { contains: title, mode: 'insensitive' } },
-        select: selectedFields 
+        where,
+        select: selectedFields
       }
     )
-    .then(response => {
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Produtos listados com sucesso.' };
-      return {
-        data: response.data,
-        meta: response.meta,
-        message,
-        statusCode: HttpStatus.OK
-      }
-    });
+      .then(response => {
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Produtos listados com sucesso.' };
+        return {
+          data: response.data,
+          meta: response.meta,
+          message,
+          statusCode: HttpStatus.OK
+        }
+      });
   }
 
   async findById(id: number) {
 
     const product = await this.prismaService.product.findUnique({
       where: { idProduct: id }
-    }); 
+    });
 
-    if(!product) this.exceptionHandler.errorNotFoundResponse('Este produto não está cadastrado no sistema!');
+    if (!product) this.exceptionHandler.errorNotFoundResponse('Este produto não está cadastrado no sistema!');
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto listado com sucesso!' };
 
     return {
@@ -142,14 +148,14 @@ export class ProductService {
       where: { idProduct: id }
     });
 
-    if(!product) this.exceptionHandler.errorNotFoundResponse('Este produto não está cadastrado no sistema!');
+    if (!product) this.exceptionHandler.errorNotFoundResponse('Este produto não está cadastrado no sistema!');
 
     await this.validateExistsProduct(product, updateProductDto);
-    
+
     let urlImage: string | null = product.urlImage;
 
-    if(file) {
-      if(product.urlImage) {
+    if (file) {
+      if (product.urlImage) {
         await this.s3Service.deleteFile(product.urlImage);
       }
       urlImage = await this.s3Service.uploadFile(file);
@@ -165,45 +171,45 @@ export class ProductService {
         urlImage: urlImage
       }
     })
-    .then(async (result) => {
+      .then(async (result) => {
 
-      await this.auditingService.saveAudit({
-        idUser: idUser,
-        action: "ATUALIZAÇÃO DE PRODUTO",
-        entityType: "PRODUTO",
-        changeType: "UPDATE",
-        entityId: result.idProduct,
-        previousValue: product,
-        newValue: result
-      } as ActionAuditingModel);
+        await this.auditingService.saveAudit({
+          idUser: idUser,
+          action: "ATUALIZAÇÃO DE PRODUTO",
+          entityType: "PRODUTO",
+          changeType: "UPDATE",
+          entityId: result.idProduct,
+          previousValue: product,
+          newValue: result
+        } as ActionAuditingModel);
 
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto atualizado com sucesso!' };
-      
-      return {
-        data: {
-          idProduct: result.idProduct,
-          idCategory: result.idCategory,
-          title: result.title,
-          description: result.description,
-          price: result.price,
-          urlImage: result.urlImage
-        },
-        message,
-        statusCode: HttpStatus.CREATED
-      }
-    })
-    .catch(() => {
-      this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar produto!');
-    });
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto atualizado com sucesso!' };
+
+        return {
+          data: {
+            idProduct: result.idProduct,
+            idCategory: result.idCategory,
+            title: result.title,
+            description: result.description,
+            price: result.price,
+            urlImage: result.urlImage
+          },
+          message,
+          statusCode: HttpStatus.CREATED
+        }
+      })
+      .catch(() => {
+        this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar produto!');
+      });
   }
 
   private async validateFieldsUpdateProduct(updateProductDto: UpdateProductDto, file: Express.Multer.File) {
-    if(!updateProductDto.title) this.exceptionHandler.errorBadRequestResponse("Título do produdo não pode ser vazio!");
+    if (!updateProductDto.title) this.exceptionHandler.errorBadRequestResponse("Título do produdo não pode ser vazio!");
 
-    if(file) 
-      if(!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG, JPEG ou PNG!`);
+    if (file)
+      if (!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG, JPEG ou PNG!`);
 
-    if(isNaN(Number(updateProductDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
+    if (isNaN(Number(updateProductDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
   }
 
   private async validateExistsProduct(product: Product, updateProductDto: UpdateProductDto) {
@@ -211,7 +217,7 @@ export class ProductService {
       where: { title: updateProductDto.title }
     });
 
-    if(existsProduct && (product.idProduct !== existsProduct.idProduct)) {
+    if (existsProduct && (product.idProduct !== existsProduct.idProduct)) {
       this.exceptionHandler.errorBadRequestResponse(`Este produto já foi cadastrado!`);
     }
   }
@@ -221,28 +227,28 @@ export class ProductService {
       where: { idProduct: id }
     });
 
-    if(!product) this.exceptionHandler.errorNotFoundResponse(`Este produto não está cadastrado no sistema!`);
+    if (!product) this.exceptionHandler.errorNotFoundResponse(`Este produto não está cadastrado no sistema!`);
 
-    if(product.urlImage) 
+    if (product.urlImage)
       await this.s3Service.deleteFile(product.urlImage);
 
     return await this.prismaService.product.delete({
       where: { idProduct: id }
     })
-    .then(async (product) => {
-      await this.auditingService.saveAudit({
-        idUser: idUser,
-        action: "EXCLUSÃO DE PRODUTO",
-        entityType: "PRODUTO",
-        changeType: "DELETE",
-        entityId: product.idProduct,
-        previousValue: product,
-        newValue: ""
-      } as ActionAuditingModel);
-      
-    })
-    .catch(() => {
-      this.exceptionHandler.errorBadRequestResponse('Erro ao excluir produto!');
-    });
+      .then(async (product) => {
+        await this.auditingService.saveAudit({
+          idUser: idUser,
+          action: "EXCLUSÃO DE PRODUTO",
+          entityType: "PRODUTO",
+          changeType: "DELETE",
+          entityId: product.idProduct,
+          previousValue: product,
+          newValue: ""
+        } as ActionAuditingModel);
+
+      })
+      .catch(() => {
+        this.exceptionHandler.errorBadRequestResponse('Erro ao excluir produto!');
+      });
   }
 }
