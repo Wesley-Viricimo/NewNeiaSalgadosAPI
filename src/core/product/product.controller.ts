@@ -16,7 +16,7 @@ export class ProductController {
   @Roles('ADMIN', 'DEV')
   @HttpCode(HttpStatus.CREATED)
   @Post()
-  @UseInterceptors(FileFastifyInterceptor('product-image'))
+  @UseInterceptors(FileFastifyInterceptor('file'))
   create(
     @Body() createProductDto: CreateProductDto, 
     @UploadedFile() file: Express.Multer.File,
@@ -45,7 +45,7 @@ export class ProductController {
   @Roles('ADMIN', 'DEV')
   @HttpCode(HttpStatus.CREATED)
   @Patch(':id')
-  @UseInterceptors(FileFastifyInterceptor('product-image'))
+  @UseInterceptors(FileFastifyInterceptor('file'))
   update(
     @Param('id') id: string, 
     @Body() updateProductDto: UpdateProductDto, 
