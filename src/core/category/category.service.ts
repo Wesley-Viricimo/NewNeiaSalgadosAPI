@@ -2,10 +2,12 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { Category } from '@prisma/client';
+import { Category, Prisma } from '@prisma/client';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
+import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
+import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 
 @Injectable()
 export class CategoryService {
@@ -13,19 +15,19 @@ export class CategoryService {
     private readonly prismaService: PrismaService,
     private readonly exceptionHandler: ExceptionHandler,
     private readonly auditingService: AuditingService
-  ) {}
+  ) { }
 
   async create(createCategoryDto: CreateCategoryDto, idUser: number) {
     const categoryExists = await this.prismaService.category.findFirst({
       where: {
         description: {
-          equals: createCategoryDto.description,  // Sem toUpperCase(), pois agora será insensível
-          mode: 'insensitive'  // Torna a comparação insensível a maiúsculas e minúsculas
+          equals: createCategoryDto.description,
+          mode: 'insensitive'
         },
       },
     });
-    
-    if (categoryExists) this.exceptionHandler.errorBadRequestResponse('A categoria já foi cadastrada!');    
+
+    if (categoryExists) this.exceptionHandler.errorBadRequestResponse('A categoria já foi cadastrada!');
 
     return await this.prismaService.category.create({
       select: { idCategory: true, description: true },
@@ -45,7 +47,7 @@ export class CategoryService {
       } as ActionAuditingModel);
 
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Categoria cadastrada com sucesso!' };
-      
+
       return {
         data: result,
         message,
@@ -57,25 +59,50 @@ export class CategoryService {
     })
   }
 
-  async findAll() {
-    try {
-      const categories = await this.prismaService.category.findMany();
-  
-      const data = categories.map(category => ({
-        idCategory: category.idCategory,
-        description: category.description
-      }));
-  
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Categorias listadas com sucesso.' };
+  async findAll(page: number, perPage: number, description: string): Promise<PaginatedOutputDto<Object>> {
+    if (page === 0 && perPage === 0) {
+      const categories = await this.prismaService.category.findMany({
+        where: {
+          description: {
+            contains: description,
+            mode: 'insensitive'
+          }
+        },
+        select: {
+          idCategory: true,
+          description: true
+        }
+      });
+
       return {
-        data,
-        message,
-        statusCode: HttpStatus.OK
+        data: categories,
+        meta: null
       };
-    } catch (error) {
-      this.exceptionHandler.errorBadRequestResponse('Erro ao listar categorias!');
     }
-  }  
+
+    const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
+
+    return await paginate<Category, Prisma.CategoryFindManyArgs>(
+      this.prismaService.category,
+      {
+        where: {
+          description: {
+            contains: description,
+            mode: 'insensitive'
+          }
+        },
+        select: {
+          idCategory: true,
+          description: true
+        }
+      }
+    ).then(response => {
+      return {
+        data: response.data,
+        meta: response.meta
+      };
+    });
+  }
 
   async findById(id: number) {
 
@@ -83,7 +110,7 @@ export class CategoryService {
       where: { idCategory: id }
     });
 
-    if(!category) this.exceptionHandler.errorNotFoundResponse('Esta categoria não está cadastrada no sistema!');
+    if (!category) this.exceptionHandler.errorNotFoundResponse('Esta categoria não está cadastrada no sistema!');
 
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Categoria listada com sucesso!' };
 
@@ -98,12 +125,12 @@ export class CategoryService {
   }
 
   async update(id: number, updateCategoryDto: UpdateCategoryDto, idUser: number) {
-    
+
     const category = await this.prismaService.category.findUnique({
       where: { idCategory: id }
     });
 
-    if(!category) this.exceptionHandler.errorNotFoundResponse(`Esta categoria não está cadastrada no sistema!`);
+    if (!category) this.exceptionHandler.errorNotFoundResponse(`Esta categoria não está cadastrada no sistema!`);
 
     await this.validateExistsCategory(category, updateCategoryDto);
 
@@ -114,32 +141,32 @@ export class CategoryService {
         description: updateCategoryDto.description
       }
     })
-    .then(async (result) => {
+      .then(async (result) => {
 
-      await this.auditingService.saveAudit({
-        idUser: idUser,
-        action: "ATUALIZAÇÃO DE CATEGORIA",
-        entityType: "CATEGORIA",
-        changeType: "UPDATE",
-        entityId: result.idCategory,
-        previousValue: category,
-        newValue: result
-      } as ActionAuditingModel);
+        await this.auditingService.saveAudit({
+          idUser: idUser,
+          action: "ATUALIZAÇÃO DE CATEGORIA",
+          entityType: "CATEGORIA",
+          changeType: "UPDATE",
+          entityId: result.idCategory,
+          previousValue: category,
+          newValue: result
+        } as ActionAuditingModel);
 
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Categoria atualizada com sucesso!' };
-      
-      return {
-        data: {
-          idCategory: result.idCategory,
-          desciption: result.description
-        },
-        message,
-        statusCode: HttpStatus.CREATED
-      }
-    })
-    .catch(() => {
-      this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar categoria!');
-    });
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Categoria atualizada com sucesso!' };
+
+        return {
+          data: {
+            idCategory: result.idCategory,
+            desciption: result.description
+          },
+          message,
+          statusCode: HttpStatus.CREATED
+        }
+      })
+      .catch(() => {
+        this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar categoria!');
+      });
   }
 
   async delete(id: number, idUser: number) {
@@ -147,33 +174,33 @@ export class CategoryService {
       where: { idCategory: id }
     });
 
-    if(!category) this.exceptionHandler.errorNotFoundResponse(`Esta categoria não está cadastrada no sistema!`);
+    if (!category) this.exceptionHandler.errorNotFoundResponse(`Esta categoria não está cadastrada no sistema!`);
 
     const products = await this.prismaService.product.findMany({
       where: { idCategory: id }
     });
 
-    if(products.length > 0) this.exceptionHandler.errorBadRequestResponse(`Existem produtos que pertecem a esta categoria, então não é possível excluí-la!`);
+    if (products.length > 0) this.exceptionHandler.errorBadRequestResponse(`Existem produtos que pertecem a esta categoria, então não é possível excluí-la!`);
 
     return await this.prismaService.category.delete({
       where: { idCategory: id }
     })
-    .then(async (result) => {
+      .then(async (result) => {
 
-      await this.auditingService.saveAudit({
-        idUser: idUser,
-        action: "EXCLUSÃO DE CATEGORIA",
-        entityType: "CATEGORIA",
-        changeType: "DELETE",
-        entityId: result.idCategory,
-        previousValue: category,
-        newValue: ""
-      } as ActionAuditingModel);
+        await this.auditingService.saveAudit({
+          idUser: idUser,
+          action: "EXCLUSÃO DE CATEGORIA",
+          entityType: "CATEGORIA",
+          changeType: "DELETE",
+          entityId: result.idCategory,
+          previousValue: category,
+          newValue: ""
+        } as ActionAuditingModel);
 
-    })
-    .catch(() => {
-      this.exceptionHandler.errorBadRequestResponse('Erro ao excluir categoria!');
-    })
+      })
+      .catch(() => {
+        this.exceptionHandler.errorBadRequestResponse('Erro ao excluir categoria!');
+      })
   }
 
   async validateExistsCategory(category: Category, updateCategoryDto: UpdateCategoryDto) {
@@ -181,6 +208,6 @@ export class CategoryService {
       where: { description: updateCategoryDto.description }
     });
 
-    if(existsCategory && (category.idCategory !== existsCategory.idCategory)) this.exceptionHandler.errorBadRequestResponse(`Esta categoria já foi cadastrada no sistema!`);
+    if (existsCategory && (category.idCategory !== existsCategory.idCategory)) this.exceptionHandler.errorBadRequestResponse(`Esta categoria já foi cadastrada no sistema!`);
   }
 }
