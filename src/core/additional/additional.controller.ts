@@ -1,13 +1,14 @@
 import { FastifyRequest } from 'fastify';
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpCode, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpCode, Req, Query } from '@nestjs/common';
 import { AdditionalService } from './additional.service';
 import { CreateAdditionalDto } from './dto/create-additional.dto';
 import { UpdateAdditionalDto } from './dto/update-additional.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
+import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 
 @Controller('api/v1/additional')
 export class AdditionalController {
-  constructor(private readonly additionalService: AdditionalService) {}
+  constructor(private readonly additionalService: AdditionalService) { }
 
   @Roles('ADMIN', 'DEV')
   @HttpCode(HttpStatus.CREATED)
@@ -23,16 +24,21 @@ export class AdditionalController {
   @HttpCode(HttpStatus.CREATED)
   @Patch(':id')
   update(
-    @Param('id') id: string, 
+    @Param('id') id: string,
     @Body() updateAdditionalDto: UpdateAdditionalDto,
     @Req() request: FastifyRequest
   ) {
     return this.additionalService.update(+id, updateAdditionalDto, request['userId']);
   }
 
+  @HttpCode(HttpStatus.OK)
   @Get()
-  findAllAdditional() {
-    return this.additionalService.findAllAdditional();
+  async findAllAdditional(
+    @Query('page') page: number = 0,
+    @Query('perPage') perPage: number = 0,
+    @Query('description') description: string
+  ): Promise<PaginatedOutputDto<Object>> {
+    return await this.additionalService.findAllAdditional(page, perPage, description);
   }
 
   @Roles('ADMIN', 'DEV')
