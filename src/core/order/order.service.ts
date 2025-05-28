@@ -198,7 +198,7 @@ export class OrderService {
           where: { idAdditional: item.idAdditional }
         });
   
-        if (!additional) this.exceptionHandler.errorBadRequestResponse(`O adicional id:${additional.idAdditional} não está cadastrado no sistema!`);
+        if (!additional) this.exceptionHandler.errorBadRequestResponse(`O adicional id:${item.idAdditional} não está cadastrado no sistema!`);
   
         totalValue += additional.price;
       }
