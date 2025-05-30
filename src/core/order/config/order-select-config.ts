@@ -29,11 +29,19 @@ export const orderItensSelectConfig = {
     },
 };
 
-export const orderSelectFields = { 
+export const additionalsSelectFields = {
+    select: {
+        description: true,
+        price: true
+    }
+}
+
+export const orderSelectFields = {
     idOrder: true,
     user: userSelectConfig,
     address: addressSelectConfig,
     orderItens: orderItensSelectConfig,
+    orderAdditional: additionalsSelectFields,
     typeOfDelivery: true,
     paymentMethod: true,
     orderStatus: true,
@@ -41,7 +49,7 @@ export const orderSelectFields = {
     total: true,
 };
 
-export const orderSelectByIdFields = { 
+export const orderSelectByIdFields = {
     idOrder: true,
     idUser: true,
     user: userSelectConfig,

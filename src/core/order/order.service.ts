@@ -6,7 +6,7 @@ import { PAYMENT_METHOD, TYPE_OF_DELIVERY, ORDER_STATUS_DELIVERY, ORDER_STATUS_W
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Order, Prisma } from '@prisma/client';
 import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
-import { userSelectConfig, addressSelectConfig, orderItensSelectConfig, orderSelectFields, orderSelectByIdFields } from 'src/core/order/config/order-select-config';
+import { userSelectConfig, addressSelectConfig, orderItensSelectConfig, orderSelectFields, orderSelectByIdFields, additionalsSelectFields } from 'src/core/order/config/order-select-config';
 import { subMinutes, isAfter, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AdditionalItemDto } from './dto/additional-item.dto';
@@ -35,24 +35,24 @@ export class OrderService {
 
     totalValue += additionalTotalValue;
 
-    const orderAdditionalData = [];
+    const orderAdditionalData = await Promise.all(createOrderDto.additionalItens.map(async (item) => {
+      const additional = await this.prismaService.additional.findUnique({
+        where: { idAdditional: item.idAdditional }
+      });
 
-    if(createOrderDto.additionalItens != undefined) {
-      for (const item of createOrderDto.additionalItens) {
-        const additional = await this.prismaService.additional.findUnique({
-          where: { idAdditional: item.idAdditional }
-        });
-
-        orderAdditionalData.push({ idAdditional: additional.idAdditional })
-      }
-    }
+      return {
+        idAdditional: additional.idAdditional,
+        description: additional.description,
+        price: additional.price
+      };
+    }));
 
     const orderItemsData = await Promise.all(createOrderDto.orderItens.map(async (item) => {
 
       const product = await this.prismaService.product.findUnique({
         where: { idProduct: item.product.idProduct }
       });
-    
+
       return {
         quantity: item.quantity,
         description: product.title,
@@ -68,7 +68,7 @@ export class OrderService {
       totalAdditional: additionalTotalValue,
       total: totalValue,
       orderAdditional: {
-        create: orderAdditionalData 
+        create: orderAdditionalData
       },
       orderItens: {
         create: orderItemsData
@@ -87,28 +87,30 @@ export class OrderService {
         }
       };
     }
-  
+
     return await this.prismaService.order.create({
       data: orderData,
       include: {
         user: userSelectConfig,
         address: addressSelectConfig,
-        orderItens: orderItensSelectConfig
+        orderItens: orderItensSelectConfig,
+        orderAdditional: additionalsSelectFields
       }
-    }).then(async (order) => { 
-      
+    }).then(async (order) => {
+
       const userNotificationToken = await this.prismaService.userNotificationToken.findUnique({
         where: { idUser: order.idUser }
       });
-    
-      if (userNotificationToken)  await this.notificationService.sendPushNotification(userNotificationToken.token, ORDER_PLACED.title, ORDER_PLACED.body);
-      
+
+      if (userNotificationToken) await this.notificationService.sendPushNotification(userNotificationToken.token, ORDER_PLACED.title, ORDER_PLACED.body);
+
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido realizado com sucesso!' };
       return {
         data: {
           user: order.user,
           address: order.address,
           orderItens: order.orderItens,
+          orderAdditional: order.orderAdditional,
           orderStatus: order.orderStatus,
           paymentMethod: order.paymentMethod,
           typeOfDelivery: order.typeOfDelivery,
@@ -118,7 +120,8 @@ export class OrderService {
         message,
         statusCode: HttpStatus.CREATED
       };
-    }).catch(() => {
+    }).catch((error) => {
+      console.log('err', error)
       this.exceptionHandler.errorBadRequestResponse('Erro ao realizar pedido!');
     });
   }
@@ -128,7 +131,7 @@ export class OrderService {
 
     const isEntrega = TYPE_OF_DELIVERY[orderDto.typeOfDelivery] === "ENTREGA";
 
-    if(isEntrega && !orderDto.idAddress) this.exceptionHandler.errorBadRequestResponse(`Endereço de entrega deve ser fornecido!`);
+    if (isEntrega && !orderDto.idAddress) this.exceptionHandler.errorBadRequestResponse(`Endereço de entrega deve ser fornecido!`);
 
     if (!PAYMENT_METHOD[orderDto.paymentMethod]) this.exceptionHandler.errorBadRequestResponse(`Forma de pagamento: ${orderDto.paymentMethod} inválida!`);
 
@@ -140,14 +143,14 @@ export class OrderService {
 
     if (!user) this.exceptionHandler.errorNotFoundResponse(`Este usuário não está cadastrado no sistema!`);
 
-    if(isEntrega) {
+    if (isEntrega) {
       const address = await this.prismaService.address.findUnique({
         where: { idAddress: orderDto.idAddress }
       });
-  
+
       if (!address) this.exceptionHandler.errorNotFoundResponse(`Este endereço não está cadastrado no sistema!`);
-  
-      if (address.idUser !== user.idUser) this.exceptionHandler.errorBadRequestResponse(`O endereço fornecido não pertence a este usuário!`); 
+
+      if (address.idUser !== user.idUser) this.exceptionHandler.errorBadRequestResponse(`O endereço fornecido não pertence a este usuário!`);
     }
 
     if (isUpdate) {
@@ -192,30 +195,36 @@ export class OrderService {
   private async calculateTotalAdditionalValue(additionalItens: AdditionalItemDto[]) {
     let totalValue = 0;
 
-    if(additionalItens != undefined) {
+    if (additionalItens != undefined) {
       for (const item of additionalItens) {
         const additional = await this.prismaService.additional.findUnique({
           where: { idAdditional: item.idAdditional }
         });
-  
+
         if (!additional) this.exceptionHandler.errorBadRequestResponse(`O adicional id:${item.idAdditional} não está cadastrado no sistema!`);
-  
+
         totalValue += additional.price;
       }
     }
     return totalValue;
   }
 
-  async findAllOrders(page: number, perPage: number, isPending: boolean = false): Promise<PaginatedOutputDto<Object>> {
+  async findAllOrders(user: string, status: string, page: number, perPage: number): Promise<PaginatedOutputDto<Object>> {
     const selectedFields = orderSelectFields;
 
     const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
 
+    const where: Prisma.OrderWhereInput = {};
+
+    if (user) where.user.name = { contains: user, mode: 'insensitive' };
+    if (status == 'complete') where.deliveryDate !== null;
+    if (status == 'pending') where.deliveryDate === null;
+
     return await paginate<Order, Prisma.OrderFindManyArgs>(
       this.prismaService.order,
       {
-        where: isPending ? { deliveryDate: null } : undefined,
-        orderBy: { createdAt: isPending ? 'asc' : 'desc' },
+        where,
+        orderBy: { createdAt: 'asc' },
         select: selectedFields
       },
       { page: page, perPage: perPage }
@@ -302,9 +311,11 @@ export class OrderService {
       const additional = await this.prismaService.additional.findUnique({
         where: { idAdditional: item.idAdditional }
       });
-  
+
       return {
-        idAdditional: additional.idAdditional
+        idAdditional: additional.idAdditional,
+        description: additional.description,
+        price: additional.price
       };
     }));
 
@@ -313,7 +324,7 @@ export class OrderService {
       const product = await this.prismaService.product.findUnique({
         where: { idProduct: item.product.idProduct }
       });
-    
+
       return {
         quantity: item.quantity,
         description: product.title,
@@ -339,7 +350,8 @@ export class OrderService {
       include: {
         user: userSelectConfig,
         address: addressSelectConfig,
-        orderItens: orderItensSelectConfig
+        orderItens: orderItensSelectConfig,
+        orderAdditional: additionalsSelectFields
       }
     })
       .then(order => {
@@ -353,6 +365,7 @@ export class OrderService {
             paymentMethod: order.paymentMethod,
             typeOfDelivery: order.typeOfDelivery,
             orderItens: order.orderItens,
+            orderAdditional: order.orderAdditional,
             totalAdditional: additionalTotalValue,
             total: order.total
           },
@@ -366,7 +379,7 @@ export class OrderService {
   }
 
   async validateUpdateOrderStatus(orderId: number, orderstatus: number, userId: number) {
-    
+
     const order = await this.prismaService.order.findUnique({
       where: { idOrder: orderId }
     });
@@ -451,7 +464,7 @@ export class OrderService {
             typeOfDelivery: order.typeOfDelivery,
             totalAdditional: order.totalAdditional,
             total: order.total,
-            deliveryDate: order.deliveryDate? format(new Date(order.deliveryDate), "dd/MM/yyyy HH:mm", { locale: ptBR }) : ''
+            deliveryDate: order.deliveryDate ? format(new Date(order.deliveryDate), "dd/MM/yyyy HH:mm", { locale: ptBR }) : ''
           },
           message,
           statusCode: HttpStatus.CREATED

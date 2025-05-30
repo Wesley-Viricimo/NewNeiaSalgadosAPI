@@ -21,19 +21,12 @@ export class OrderController {
   @Roles('ADMIN', 'DEV')
   @Get()
   findAllOrders(
+    @Query('user') user: string,
+    @Query('status') status: string,
     @Query('page') page: number = 1,
     @Query('perPage') perPage: number = 10
   ): Promise<PaginatedOutputDto<Object>> {
-    return this.orderService.findAllOrders(page, perPage);
-  }
-
-  @Roles('ADMIN', 'DEV')
-  @Get('pending')
-  async findAllOrdersPending(
-    @Query('page') page: number = 1,
-    @Query('perPage') perPage: number = 10
-  ): Promise<PaginatedOutputDto<Object>> {
-    return await this.orderService.findAllOrders(page, perPage, true);
+    return this.orderService.findAllOrders(user, status, page, perPage);
   }
 
   @Get('user/all')
