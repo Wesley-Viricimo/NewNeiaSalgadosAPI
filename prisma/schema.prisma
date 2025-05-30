@@ -145,6 +145,8 @@ model OrderAdditional {
   idProductAdditional   Int                 @default(autoincrement()) @id
   idOrder               Int
   idAdditional          Int
+  description           String
+  price                 Float
   order                 Order               @relation(fields: [idOrder], references: [idOrder], onDelete: Cascade, onUpdate: Cascade)
   additional            Additional          @relation(fields: [idAdditional], references: [idAdditional])
   createdAt             DateTime            @default(now())
