@@ -47,6 +47,7 @@ export const orderSelectFields = {
     orderStatus: true,
     totalAdditional: true,
     total: true,
+    createdAt: true
 };
 
 export const orderSelectByIdFields = {
@@ -61,4 +62,5 @@ export const orderSelectByIdFields = {
     orderStatus: true,
     totalAdditional: true,
     total: true,
+    createdAt: true
 };
