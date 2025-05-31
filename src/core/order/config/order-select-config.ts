@@ -55,6 +55,7 @@ export const orderSelectByIdFields = {
     user: userSelectConfig,
     address: addressSelectConfig,
     orderItens: orderItensSelectConfig,
+    orderAdditional: additionalsSelectFields,
     typeOfDelivery: true,
     paymentMethod: true,
     orderStatus: true,

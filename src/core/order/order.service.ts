@@ -428,7 +428,8 @@ export class OrderService {
       include: {
         user: userSelectConfig,
         address: addressSelectConfig,
-        orderItens: orderItensSelectConfig
+        orderItens: orderItensSelectConfig,
+        orderAdditional: additionalsSelectFields
       }
     })
       .then(async (order) => {
@@ -459,6 +460,7 @@ export class OrderService {
             user: order.user,
             address: order.address,
             orderItens: order.orderItens,
+            orderAdditional: order.orderAdditional,
             orderStatus: order.orderStatus,
             paymentMethod: order.paymentMethod,
             typeOfDelivery: order.typeOfDelivery,
