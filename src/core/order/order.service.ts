@@ -216,9 +216,9 @@ export class OrderService {
 
     const where: Prisma.OrderWhereInput = {};
 
-    if (user) where.user.name = { contains: user, mode: 'insensitive' };
-    if (status == 'complete') where.deliveryDate !== null;
-    if (status == 'pending') where.deliveryDate === null;
+    if (user) where.user = { name: { contains: user, mode: 'insensitive' } };
+    if (status === 'complete') where.deliveryDate = { not: null };
+    if (status === 'pending') where.deliveryDate = null;
 
     return await paginate<Order, Prisma.OrderFindManyArgs>(
       this.prismaService.order,
