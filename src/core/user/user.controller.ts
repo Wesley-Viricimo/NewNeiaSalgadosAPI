@@ -24,23 +24,17 @@ export class UserController {
   }
 
   @Roles('ADMIN', 'DEV')
-  @Get('all')
+  @Get()
   @ApiPaginatedResponse(User)
   async findAll(
+    @Query('user') user: string,
+    @Query('cpf') cpf: string,
+    @Query('status') status: string,
     @Query('page') page: number = 1,
     @Query('perPage') perPage: number = 10
   ): Promise<PaginatedOutputDto<Object>> {
-    return await this.userService.findAll(page, perPage, false);
+    return await this.userService.findAll(user, cpf, status, page, perPage);
   }
-
-  @Roles('ADMIN', 'DEV')
-  @Get('inative')
-  async findInativeUsers(
-    @Query('page') page: number = 1,
-    @Query('perPage') perPage: number = 10
-  ): Promise<PaginatedOutputDto<Object>> {
-    return await this.userService.findAll(page, perPage, true)
-  } 
 
   @Roles('ADMIN', 'DEV')
   @Get(':id')

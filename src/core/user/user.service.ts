@@ -106,16 +106,23 @@ export class UserService {
     return user;
   }
 
-  async findAll(page: number, perPage: number, inativeUsers: boolean): Promise<PaginatedOutputDto<Object>> {
+  async findAll(user: string, cpf: string, status:string, page: number, perPage: number): Promise<PaginatedOutputDto<Object>> {
     
     const selectedFields = userSelectConfig;
 
     const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
 
+    const where: Prisma.UserWhereInput = {};
+    
+    if (user) where.name = { contains: user, mode: 'insensitive' };
+    if (cpf) where.cpf = { contains: cpf, mode: 'insensitive' };
+    if (status == 'active') where.isActive = true;
+    if (status == 'inactive') where.isActive = false;
+
     return await paginate<User, Prisma.UserFindManyArgs>(
       this.prismaService.user,
       {
-        where: inativeUsers ? { isActive: false } : undefined, 
+        where, 
         select: selectedFields
       },
       { page: page, perPage: perPage }

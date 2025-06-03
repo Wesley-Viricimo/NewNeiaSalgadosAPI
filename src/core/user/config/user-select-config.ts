@@ -4,6 +4,7 @@ export const userSelectConfig = {
     surname: true,
     cpf: true,
     email: true,
+    phone: true,
     role: true,
     isActive: true
 };
