@@ -347,6 +347,8 @@ export class UserService {
     const user = await this.prismaService.user.findUnique({
       where: { idUser: id }
     });
+
+    if (user.idUser == idUser) this.exceptionHandler.errorBadRequestResponse('Não é possível alterar o próprio status de atividade!');
   
     if (!user) this.exceptionHandler.errorNotFoundResponse('Este usuário não está cadastrado no sistema!');
   
