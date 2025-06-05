@@ -24,6 +24,13 @@ export class UserController {
   }
 
   @Roles('ADMIN', 'DEV')
+  @Post('create-admin')
+  @HttpCode(HttpStatus.CREATED)
+  createAdmin(@Body() user: CreateUserDto) {
+    return this.userService.createAdmin(user)
+  }
+
+  @Roles('ADMIN', 'DEV')
   @Get()
   @ApiPaginatedResponse(User)
   async findAll(

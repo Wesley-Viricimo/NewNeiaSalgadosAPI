@@ -19,4 +19,6 @@ export class CreateUserDto {
 
     @IsNotEmpty({ message: "O campo senha é obrigatório!" })
     password: string;
+
+    role: string;
 }

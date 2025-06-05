@@ -76,6 +76,61 @@ export class UserService {
       });
   }
 
+  async createAdmin(user: CreateUserDto) {
+
+    await this.validateFieldsCreateUser(user);
+    
+      const passwordHash = await hash(user.password, 8);
+
+      return await this.prismaService.user.create({
+        data: {
+          name: user.name,
+          surname: user.surname,
+          cpf: user.cpf,
+          phone: user.phone,
+          email: user.email,
+          role: user.role,
+          isActive: true,
+          password: passwordHash
+        },
+      })
+      .then(async (user) => {
+        const activationCode = this.generateActivationCode();
+
+        const activation = await this.prismaService.userActivationCode.create({
+          data: {
+            code: activationCode,
+            idUser: user.idUser
+          }
+        });
+
+        await this.prismaService.userActivationCode.update({
+          where: { idCode: activation.idCode },
+          data: {
+            confirmed: true
+          }
+        })
+        
+        const message = { severity: 'success', summary: 'Sucesso', detail: `Usuário ${user.role} cadastrado com sucesso!` };
+        return {
+          data: {
+            name: user.name,
+            surname: user.surname,
+            cpf: user.cpf,
+            phone: user.phone,
+            email: user.email,
+            role: user.role,
+            isActive: user.isActive
+          },
+          message,
+          statusCode: HttpStatus.CREATED
+        };
+      })
+      .catch(() => {
+        this.exceptionHandler.errorBadRequestResponse(`Erro ao cadastrar usuário ${user.role}!`);
+      });
+  }
+
   private generateActivationCode(): string {
     return Math.random().toString(36).substring(2, 7).toUpperCase();
   }
