@@ -3,6 +3,7 @@ export const userSelectConfig = {
         name: true,
         surname: true,
         cpf: true,
+        phone: true,
         email: true,
         role: true,
         isActive: true,
