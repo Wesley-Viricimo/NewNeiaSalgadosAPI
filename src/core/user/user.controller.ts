@@ -30,7 +30,7 @@ export class UserController {
     return this.userService.createAdmin(user)
   }
 
-  @Roles('ADMIN', 'DEV')
+  @Roles('ADMIN', 'DEV', 'COMERCIAL')
   @Get()
   @ApiPaginatedResponse(User)
   async findAll(
@@ -43,7 +43,7 @@ export class UserController {
     return await this.userService.findAll(user, cpf, status, page, perPage);
   }
 
-  @Roles('ADMIN', 'DEV')
+  @Roles('ADMIN', 'DEV', 'COMERCIAL')
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.userService.findById(+id);
@@ -55,13 +55,14 @@ export class UserController {
     return this.userService.update(updateUserDto, request['userId'] );
   }
 
-  @Roles('DEV')
-  @Patch(':id/role/:role')
+  @Roles('DEV', 'ADMIN')
+  @Patch(':userId/role/:role')
   async updateUserRole(
-    @Param('id') id: string,
-    @Param('role') role: string 
+    @Param('userId') userId: string,
+    @Param('role') role: string,
+    @Req() request: FastifyRequest
   ) {
-    return await this.userService.updateUserRole(+id, role);
+    return await this.userService.updateUserRole(+userId, role, request['userId']);
   }
 
   @Public()
