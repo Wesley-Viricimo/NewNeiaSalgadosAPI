@@ -281,6 +281,7 @@ export class UserService {
 
   async updateUserRole(userId: number, role: string, adminId: number) {
     if (!ROLES[role]) this.exceptionHandler.errorBadRequestResponse(`Não existe a função com o id: ${role}`);
+    if (userId == adminId) this.exceptionHandler.errorBadRequestResponse('Um usuário não pode alterar a própria função!');
 
     const admin = await this.prismaService.user.findUnique({
       where: { idUser: adminId }
@@ -294,6 +295,7 @@ export class UserService {
     });
 
     if (!user) this.exceptionHandler.errorBadRequestResponse('Este usuário não está cadastrado no sistema!');
+    if (user.isActive == false) this.exceptionHandler.errorBadRequestResponse('Não é possível alterar a função de usuários inativos!');
 
     if (admin.role == 'ADMIN' && (user.role == 'ADMIN' || user.role == 'DEV')) this.exceptionHandler.errorBadRequestResponse('Não é permitido que usuários ADMIN altere privilégios de outros usuários ADMIN ou DEV!');
 
@@ -302,7 +304,7 @@ export class UserService {
       data: { role: ROLES[role] }
     })
       .then(async (result) => {
-        
+
         await this.auditingService.saveAudit({
           idUser: admin.idUser,
           action: "ATUALIZAÇÃO DE FUNÇÃO DE USUÁRIO",
