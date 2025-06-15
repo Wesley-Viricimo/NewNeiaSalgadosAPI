@@ -30,7 +30,7 @@ export class ProductService {
 
     let urlImage: string | null = null;
 
-    if (file)
+    if (file && typeof file.mimetype === 'string')
       urlImage = await this.s3Service.uploadFile(file);
 
     return await this.prismaService.product.create({
@@ -69,7 +69,7 @@ export class ProductService {
   }
 
   private async validateFieldsCreateProduct(createProductDto: CreateProductDto, file: Express.Multer.File) {
-    if (file)
+    if (file && typeof file.mimetype === 'string')
       if (!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
 
     if (isNaN(Number(createProductDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
@@ -154,7 +154,7 @@ export class ProductService {
 
     let urlImage: string | null = product.urlImage;
 
-    if (file) {
+    if (file && typeof file.mimetype === 'string') {
       if (product.urlImage) {
         await this.s3Service.deleteFile(product.urlImage);
       }
@@ -206,7 +206,7 @@ export class ProductService {
   private async validateFieldsUpdateProduct(updateProductDto: UpdateProductDto, file: Express.Multer.File) {
     if (!updateProductDto.title) this.exceptionHandler.errorBadRequestResponse("Título do produdo não pode ser vazio!");
 
-    if (file)
+    if (file && typeof file.mimetype === 'string')
       if (!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG, JPEG ou PNG!`);
 
     if (isNaN(Number(updateProductDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
