@@ -12,7 +12,7 @@ import getMessageStatus from './constants/order.messages';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
-import { AdditionalItemDto, OrderDto } from './dto/order-dto';
+import { AdditionalItemDto, OrderDto, OrderFindAllQuery, OrderUpdateStatusParams } from './dto/order-dto';
 
 @Injectable()
 export class OrderService {
@@ -207,16 +207,16 @@ export class OrderService {
     return totalValue;
   }
 
-  async findAllOrders(user: string, status: string, page: number, perPage: number): Promise<PaginatedOutputDto<Object>> {
+  async findAllOrders(orderQuery: OrderFindAllQuery): Promise<PaginatedOutputDto<Object>> {
     const selectedFields = orderSelectFields;
 
-    const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
+    const paginate: PaginatorTypes.PaginateFunction = paginator({ page: orderQuery.page, perPage: orderQuery.perPage });
 
     const where: Prisma.OrderWhereInput = {};
 
-    if (user) where.user = { name: { contains: user, mode: 'insensitive' } };
-    if (status === 'complete') where.deliveryDate = { not: null };
-    if (status === 'pending') where.deliveryDate = null;
+    if (orderQuery.user) where.user = { name: { contains: orderQuery.user, mode: 'insensitive' } };
+    if (orderQuery.status === 'complete') where.deliveryDate = { not: null };
+    if (orderQuery.status === 'pending') where.deliveryDate = null;
 
     return await paginate<Order, Prisma.OrderFindManyArgs>(
       this.prismaService.order,
@@ -225,7 +225,7 @@ export class OrderService {
         orderBy: { createdAt: 'asc' },
         select: selectedFields
       },
-      { page: page, perPage: perPage }
+      { page: orderQuery.page, perPage: orderQuery.perPage }
     )
       .then(response => {
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedidos listados com sucesso.' };
@@ -238,11 +238,11 @@ export class OrderService {
       });
   }
 
-  async findAllOrdersByUser(userId: number, page: number, perPage: number): Promise<PaginatedOutputDto<Object>> {
+  async findAllOrdersByUser(orderQuery: OrderFindAllQuery, userId: number): Promise<PaginatedOutputDto<Object>> {
 
     const selectedFields = orderSelectFields;
 
-    const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
+    const paginate: PaginatorTypes.PaginateFunction = paginator({ page: orderQuery.page, perPage: orderQuery.perPage });
 
     return await paginate<Order, Prisma.OrderFindManyArgs>(
       this.prismaService.order,
@@ -250,7 +250,7 @@ export class OrderService {
         where: { idUser: userId },
         select: selectedFields,
       },
-      { page: page, perPage: perPage }
+      { page: orderQuery.page, perPage: orderQuery.perPage }
     )
       .then(response => {
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedidos listados com sucesso.' };
@@ -376,10 +376,10 @@ export class OrderService {
       });
   }
 
-  async validateUpdateOrderStatus(orderId: number, orderstatus: number, userId: number) {
+  async validateUpdateOrderStatus(orderUpdateStatus: OrderUpdateStatusParams, userId: number) {
 
     const order = await this.prismaService.order.findUnique({
-      where: { idOrder: orderId }
+      where: { idOrder: orderUpdateStatus.orderId }
     });
 
     if (!order) this.exceptionHandler.errorNotFoundResponse(`Este pedido não foi encontrado!`);
@@ -390,25 +390,25 @@ export class OrderService {
 
     switch (order.typeOfDelivery) {
       case 'ENTREGA': {
-        if (!ORDER_STATUS_DELIVERY[orderstatus]) this.exceptionHandler.errorBadRequestResponse(`Status do pedido ${orderstatus} é inválido!`);
-        if (ORDER_STATUS_DELIVERY[orderstatus] == 'ENTREGUE' || ORDER_STATUS_DELIVERY[orderstatus] == 'CANCELADO') {
+        if (!ORDER_STATUS_DELIVERY[orderUpdateStatus.orderStatus]) this.exceptionHandler.errorBadRequestResponse(`Status do pedido ${orderUpdateStatus.orderStatus} é inválido!`);
+        if (ORDER_STATUS_DELIVERY[orderUpdateStatus.orderStatus] == 'ENTREGUE' || ORDER_STATUS_DELIVERY[orderUpdateStatus.orderStatus] == 'CANCELADO') {
           isPending = false;
         } else {
           isPending = true;
         }
 
-        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_DELIVERY[orderstatus], isPending, order.typeOfDelivery, userId, order.orderStatus);
+        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_DELIVERY[orderUpdateStatus.orderStatus], isPending, order.typeOfDelivery, userId, order.orderStatus);
       }
 
       case 'RETIRA': {
-        if (!ORDER_STATUS_WITHDRAWAL[orderstatus]) this.exceptionHandler.errorBadRequestResponse(`Status do pedido ${orderstatus} é inválido!`);
-        if (ORDER_STATUS_WITHDRAWAL[orderstatus] == 'ENTREGUE' || ORDER_STATUS_WITHDRAWAL[orderstatus] == 'CANCELADO') {
+        if (!ORDER_STATUS_WITHDRAWAL[orderUpdateStatus.orderStatus]) this.exceptionHandler.errorBadRequestResponse(`Status do pedido ${orderUpdateStatus.orderStatus} é inválido!`);
+        if (ORDER_STATUS_WITHDRAWAL[orderUpdateStatus.orderStatus] == 'ENTREGUE' || ORDER_STATUS_WITHDRAWAL[orderUpdateStatus.orderStatus] == 'CANCELADO') {
           isPending = false;
         } else {
           isPending = true;
         }
 
-        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_WITHDRAWAL[orderstatus], isPending, order.typeOfDelivery, userId, order.orderStatus);
+        return this.updateOrderStatus(order.idOrder, ORDER_STATUS_WITHDRAWAL[orderUpdateStatus.orderStatus], isPending, order.typeOfDelivery, userId, order.orderStatus);
       }
 
       default: break;

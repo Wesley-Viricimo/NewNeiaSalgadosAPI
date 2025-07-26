@@ -5,7 +5,7 @@ import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { Order } from './entities/order.entity';
 import { FastifyRequest } from 'fastify';
-import { OrderDto, OrderDtoSchema } from './dto/order-dto';
+import { OrderDto, OrderDtoSchema, OrderFindAllQuery, OrderFindAllQuerySchema, OrderUpdateStatusParams, OrderUpdateStatusParamsSchema } from './dto/order-dto';
 import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
 
 @Controller('api/v1/order')
@@ -21,22 +21,18 @@ export class OrderController {
   @Roles('ADMIN', 'DEV')
   @Get()
   findAllOrders(
-    @Query('user') user: string,
-    @Query('status') status: string,
-    @Query('page') page: number = 1,
-    @Query('perPage') perPage: number = 10
+    @Query(new ZodValidationPipe(OrderFindAllQuerySchema)) orderQuery: OrderFindAllQuery
   ): Promise<PaginatedOutputDto<Object>> {
-    return this.orderService.findAllOrders(user, status, page, perPage);
+    return this.orderService.findAllOrders(orderQuery);
   }
 
   @Get('user/all')
   @ApiPaginatedResponse(Order)
   async findAllOrdersByUser(
     @Req() request: FastifyRequest,
-    @Query('page') page: number = 1,
-    @Query('perPage') perPage: number = 10
+    @Query(new ZodValidationPipe(OrderFindAllQuerySchema)) orderQuery: OrderFindAllQuery
   ): Promise<PaginatedOutputDto<Object>> {
-    return await this.orderService.findAllOrdersByUser(request['userId'], page, perPage);
+    return await this.orderService.findAllOrdersByUser(orderQuery, request['userId']);
   }
 
   @Get(':id')
@@ -55,14 +51,13 @@ export class OrderController {
   }
 
   @Roles('ADMIN', 'DEV')
-  @Patch(':orderId/orderstatus/:orderstatus')
+  @Patch(':orderId/orderstatus/:orderStatus')
   @HttpCode(HttpStatus.CREATED)
   updateOrderStatus(
-    @Param('orderId') orderId: string,
-    @Param('orderstatus') orderstatus: string,
+    @Param(new ZodValidationPipe(OrderUpdateStatusParamsSchema)) orderUpdateStatus: OrderUpdateStatusParams,
     @Req() request: FastifyRequest
   ) {
-    return this.orderService.validateUpdateOrderStatus(+orderId, +orderstatus, request['userId']);
+    return this.orderService.validateUpdateOrderStatus(orderUpdateStatus, request['userId']);
   }
   
 }
