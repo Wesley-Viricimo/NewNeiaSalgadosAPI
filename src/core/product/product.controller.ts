@@ -6,7 +6,7 @@ import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { Product } from './entities/product.entity';
 import { FileFastifyInterceptor } from "fastify-file-interceptor";
 import { FastifyRequest } from 'fastify';
-import { ProductDto, ProductDtoSchema } from './dto/product.dto';
+import { ProductDto, ProductDtoSchema, ProductQuery, ProductQuerySchema } from './dto/product.dto';
 import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
 
 @Controller('api/v1/product')
@@ -28,13 +28,9 @@ export class ProductController {
   @ApiPaginatedResponse(Product)
   @Get()
   async findAll(
-    @Query('page') page: number = 1,
-    @Query('perPage') perPage: number = 10,
-    @Query('title') title: string,
-    @Query('description') description: string,
-    @Query('category') category: number
+    @Query(new ZodValidationPipe(ProductQuerySchema)) productQuery: ProductQuery
   ): Promise<PaginatedOutputDto<Object>> {
-    return await this.productService.findAll(page, perPage, title, description, category);
+    return await this.productService.findAll(productQuery);
   }
 
   @Get(':id')

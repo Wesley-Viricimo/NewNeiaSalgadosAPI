@@ -9,7 +9,7 @@ import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler
 import { S3Service } from 'src/service/aws/handle-fileS3.service';
 import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
-import { ProductDto } from './dto/product.dto';
+import { ProductDto, ProductQuery } from './dto/product.dto';
 
 @Injectable()
 export class ProductService {
@@ -37,8 +37,8 @@ export class ProductService {
       data: {
         title: productDto.title,
         description: productDto.description,
-        price: Number(productDto.price),
-        idCategory: Number(productDto.idCategory),
+        price: productDto.price,
+        idCategory: productDto.idCategory,
         urlImage
       }
     })
@@ -71,8 +71,6 @@ export class ProductService {
     if (file && typeof file.mimetype === 'string')
       if (!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
 
-    if (isNaN(Number(productDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
-
     const existsProduct = await this.prismaService.product.findUnique({
       where: { title: productDto.title }
     });
@@ -80,23 +78,23 @@ export class ProductService {
     if (existsProduct) this.exceptionHandler.errorBadRequestResponse('Produto já cadastrado no sistema!');
 
     const existsCategory = await this.prismaService.category.findUnique({
-      where: { idCategory: Number(productDto.idCategory) }
+      where: { idCategory: productDto.idCategory }
     });
 
     if (!existsCategory) this.exceptionHandler.errorBadRequestResponse('Categoria não cadastrada no sistema!');
   }
 
-  async findAll(page: number, perPage: number, title: string, description: string, category: number): Promise<PaginatedOutputDto<Object>> {
+  async findAll(productQuery: ProductQuery): Promise<PaginatedOutputDto<Object>> {
 
-    const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
+    const paginate: PaginatorTypes.PaginateFunction = paginator({ page: productQuery.page, perPage: productQuery.perPage });
 
     const selectedFields = productSelectConfig;
 
     const where: Prisma.ProductWhereInput = {};
 
-    if (title) where.title = { contains: title, mode: 'insensitive' };
-    if (description) where.description = { contains: description, mode: 'insensitive' };
-    if (category) where.idCategory = Number(category);
+    if (productQuery.title) where.title = { contains: productQuery.title, mode: 'insensitive' };
+    if (productQuery.description) where.description = { contains: productQuery.description, mode: 'insensitive' };
+    if (productQuery.category) where.idCategory = productQuery.category;
 
     return await paginate<Product, Prisma.ProductFindManyArgs>(
       this.prismaService.product,
@@ -164,9 +162,9 @@ export class ProductService {
       where: { idProduct: id },
       data: {
         idProduct: id,
-        idCategory: Number(productDto.idCategory),
+        idCategory: productDto.idCategory,
         description: productDto.description,
-        price: Number(productDto.price),
+        price: productDto.price,
         urlImage: urlImage
       }
     })
@@ -207,8 +205,6 @@ export class ProductService {
 
     if (file && typeof file.mimetype === 'string')
       if (!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG, JPEG ou PNG!`);
-
-    if (isNaN(Number(productDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
   }
 
   private async validateExistsProduct(product: Product, updateProductDto: ProductDto) {
