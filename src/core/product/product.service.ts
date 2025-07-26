@@ -1,6 +1,4 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductSide } from './entities/product.entity';
 import { PaginatorTypes, paginator } from '@nodeteam/nestjs-prisma-pagination';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
@@ -11,6 +9,7 @@ import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler
 import { S3Service } from 'src/service/aws/handle-fileS3.service';
 import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
+import { ProductDto } from './dto/product.dto';
 
 @Injectable()
 export class ProductService {
@@ -22,11 +21,11 @@ export class ProductService {
     private readonly auditingService: AuditingService
   ) { }
 
-  async create(createProductDto: CreateProductDto, file: Express.Multer.File, idUser: number) {
+  async create(productDto: ProductDto, file: Express.Multer.File, idUser: number) {
 
     const selectedFields = productSelectConfig;
 
-    await this.validateFieldsCreateProduct(createProductDto, file);
+    await this.validateFieldsCreateProduct(productDto, file);
 
     let urlImage: string | null = null;
 
@@ -36,10 +35,10 @@ export class ProductService {
     return await this.prismaService.product.create({
       select: selectedFields,
       data: {
-        title: createProductDto.title,
-        description: createProductDto.description,
-        price: Number(createProductDto.price),
-        idCategory: Number(createProductDto.idCategory),
+        title: productDto.title,
+        description: productDto.description,
+        price: Number(productDto.price),
+        idCategory: Number(productDto.idCategory),
         urlImage
       }
     })
@@ -68,20 +67,20 @@ export class ProductService {
       });
   }
 
-  private async validateFieldsCreateProduct(createProductDto: CreateProductDto, file: Express.Multer.File) {
+  private async validateFieldsCreateProduct(productDto: ProductDto, file: Express.Multer.File) {
     if (file && typeof file.mimetype === 'string')
       if (!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG ou JPEG!`);
 
-    if (isNaN(Number(createProductDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
+    if (isNaN(Number(productDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
 
     const existsProduct = await this.prismaService.product.findUnique({
-      where: { title: createProductDto.title }
+      where: { title: productDto.title }
     });
 
     if (existsProduct) this.exceptionHandler.errorBadRequestResponse('Produto já cadastrado no sistema!');
 
     const existsCategory = await this.prismaService.category.findUnique({
-      where: { idCategory: Number(createProductDto.idCategory) }
+      where: { idCategory: Number(productDto.idCategory) }
     });
 
     if (!existsCategory) this.exceptionHandler.errorBadRequestResponse('Categoria não cadastrada no sistema!');
@@ -140,9 +139,9 @@ export class ProductService {
     }
   }
 
-  async update(id: number, updateProductDto: UpdateProductDto, file: Express.Multer.File, idUser: number) {
+  async update(id: number, productDto: ProductDto, file: Express.Multer.File, idUser: number) {
 
-    await this.validateFieldsUpdateProduct(updateProductDto, file);
+    await this.validateFieldsUpdateProduct(productDto, file);
 
     const product = await this.prismaService.product.findUnique({
       where: { idProduct: id }
@@ -150,7 +149,7 @@ export class ProductService {
 
     if (!product) this.exceptionHandler.errorNotFoundResponse('Este produto não está cadastrado no sistema!');
 
-    await this.validateExistsProduct(product, updateProductDto);
+    await this.validateExistsProduct(product, productDto);
 
     let urlImage: string | null = product.urlImage;
 
@@ -165,9 +164,9 @@ export class ProductService {
       where: { idProduct: id },
       data: {
         idProduct: id,
-        idCategory: Number(updateProductDto.idCategory),
-        description: updateProductDto.description,
-        price: Number(updateProductDto.price),
+        idCategory: Number(productDto.idCategory),
+        description: productDto.description,
+        price: Number(productDto.price),
         urlImage: urlImage
       }
     })
@@ -203,16 +202,16 @@ export class ProductService {
       });
   }
 
-  private async validateFieldsUpdateProduct(updateProductDto: UpdateProductDto, file: Express.Multer.File) {
-    if (!updateProductDto.title) this.exceptionHandler.errorBadRequestResponse("Título do produdo não pode ser vazio!");
+  private async validateFieldsUpdateProduct(productDto: ProductDto, file: Express.Multer.File) {
+    if (!productDto.title) this.exceptionHandler.errorBadRequestResponse("Título do produdo não pode ser vazio!");
 
     if (file && typeof file.mimetype === 'string')
       if (!file?.mimetype.includes('jpg') && !file?.mimetype.includes('jpeg') && !file?.mimetype.includes('png')) this.exceptionHandler.errorUnsupportedMediaTypeResponse(`A ${ProductSide['urlImage']} do produto deve ser do tipo JPG, JPEG ou PNG!`);
 
-    if (isNaN(Number(updateProductDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
+    if (isNaN(Number(productDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do produto deve ser um valor numérico!`);
   }
 
-  private async validateExistsProduct(product: Product, updateProductDto: UpdateProductDto) {
+  private async validateExistsProduct(product: Product, updateProductDto: ProductDto) {
     const existsProduct = await this.prismaService.product.findUnique({
       where: { title: updateProductDto.title }
     });

@@ -1,13 +1,13 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, HttpCode, HttpStatus, Query, Req } from '@nestjs/common';
 import { ProductService } from './product.service';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
 import { ApiPaginatedResponse } from 'src/shared/decorators/pagination.decorator';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { Product } from './entities/product.entity';
 import { FileFastifyInterceptor } from "fastify-file-interceptor";
 import { FastifyRequest } from 'fastify';
+import { ProductDto, ProductDtoSchema } from './dto/product.dto';
+import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
 
 @Controller('api/v1/product')
 export class ProductController {
@@ -18,11 +18,11 @@ export class ProductController {
   @Post()
   @UseInterceptors(FileFastifyInterceptor('file'))
   create(
-    @Body() createProductDto: CreateProductDto, 
+    @Body(new ZodValidationPipe(ProductDtoSchema)) productDto: ProductDto, 
     @UploadedFile() file: Express.Multer.File,
     @Req() request: FastifyRequest
   ) {
-    return this.productService.create(createProductDto, file, request['userId']);
+    return this.productService.create(productDto, file, request['userId']);
   }
 
   @ApiPaginatedResponse(Product)
@@ -48,11 +48,11 @@ export class ProductController {
   @UseInterceptors(FileFastifyInterceptor('file'))
   update(
     @Param('id') id: string, 
-    @Body() updateProductDto: UpdateProductDto, 
+    @Body() productDto: ProductDto, 
     @UploadedFile() file: Express.Multer.File,
     @Req() request: FastifyRequest
   ) {
-    return this.productService.update(+id, updateProductDto, file, request['userId']);
+    return this.productService.update(+id, productDto, file, request['userId']);
   }
 
   @Roles('ADMIN', 'DEV')

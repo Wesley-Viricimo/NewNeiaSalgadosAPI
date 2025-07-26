@@ -4,7 +4,7 @@ import { AddressController } from './address.controller';
 import { ViaCepService } from 'src/service/viacep.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
-import { ErrorExceptionFilters } from 'src/shared/utils/httpResponseService/errorResponse.service';
+import { ErrorExceptionFilters } from 'src/service/errorResponse.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 
 @Module({

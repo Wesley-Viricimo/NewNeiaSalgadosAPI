@@ -1,5 +1,5 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
-import { ErrorExceptionFilters } from "../httpResponseService/errorResponse.service";
+import { ErrorExceptionFilters } from "../../../service/errorResponse.service";
 
 @Injectable()
 export class ExceptionHandler {
