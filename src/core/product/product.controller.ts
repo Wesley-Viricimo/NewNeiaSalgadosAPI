@@ -48,7 +48,7 @@ export class ProductController {
   @UseInterceptors(FileFastifyInterceptor('file'))
   update(
     @Param('id') id: string, 
-    @Body() productDto: ProductDto, 
+    @Body(new ZodValidationPipe(ProductDtoSchema)) productDto: ProductDto, 
     @UploadedFile() file: Express.Multer.File,
     @Req() request: FastifyRequest
   ) {

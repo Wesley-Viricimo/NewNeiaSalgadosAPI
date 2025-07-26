@@ -1,12 +1,12 @@
 import { Controller, Get, Post, Body, Patch, Param, Req, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { OrderService } from './order.service';
-import { CreateOrderDto } from './dto/create-order.dto';
-import { UpdateOrderDto } from './dto/update-order.dto';
 import { ApiPaginatedResponse } from 'src/shared/decorators/pagination.decorator';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { Order } from './entities/order.entity';
 import { FastifyRequest } from 'fastify';
+import { OrderDto, OrderDtoSchema } from './dto/order-dto';
+import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
 
 @Controller('api/v1/order')
 export class OrderController {
@@ -14,8 +14,8 @@ export class OrderController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createOrderDto: CreateOrderDto, @Req() request: FastifyRequest) {
-    return this.orderService.create(createOrderDto, request['userId']);
+  create(@Body(new ZodValidationPipe(OrderDtoSchema)) orderDto: OrderDto, @Req() request: FastifyRequest) {
+    return this.orderService.create(orderDto, request['userId']);
   }
 
   @Roles('ADMIN', 'DEV')
@@ -48,7 +48,7 @@ export class OrderController {
   @HttpCode(HttpStatus.CREATED)
   update(
     @Param('id') id: string, 
-    @Body() updateOrderDto: UpdateOrderDto,
+    @Body(new ZodValidationPipe(OrderDtoSchema)) updateOrderDto: OrderDto,
     @Req() request: FastifyRequest
   ) {
     return this.orderService.update(+id, updateOrderDto, request['userId']);

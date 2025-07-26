@@ -1,6 +1,4 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
-import { CreateOrderDto } from './dto/create-order.dto';
-import { UpdateOrderDto } from './dto/update-order.dto';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { PAYMENT_METHOD, TYPE_OF_DELIVERY, ORDER_STATUS_DELIVERY, ORDER_STATUS_WITHDRAWAL, ORDER_PLACED } from './constants/order.constants';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
@@ -9,12 +7,12 @@ import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { userSelectConfig, addressSelectConfig, orderItensSelectConfig, orderSelectFields, orderSelectByIdFields, additionalsSelectFields } from 'src/core/order/config/order-select-config';
 import { subMinutes, isAfter, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { AdditionalItemDto } from './dto/additional-item.dto';
 import { NotificationService } from 'src/service/notification.service';
 import getMessageStatus from './constants/order.messages';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
+import { AdditionalItemDto, OrderDto } from './dto/order-dto';
 
 @Injectable()
 export class OrderService {
@@ -25,17 +23,17 @@ export class OrderService {
     private readonly auditingService: AuditingService
   ) { }
 
-  async create(createOrderDto: CreateOrderDto, userId: number) {
+  async create(orderDto: OrderDto, userId: number) {
 
-    await this.validateOrderFields(createOrderDto, userId);
+    await this.validateOrderFields(orderDto, userId);
 
-    let totalValue = await this.calculateTotalOrderValue(createOrderDto.orderItens);
+    let totalValue = await this.calculateTotalOrderValue(orderDto.orderItens);
 
-    const additionalTotalValue = await this.calculateTotalAdditionalValue(createOrderDto.additionalItens);
+    const additionalTotalValue = await this.calculateTotalAdditionalValue(orderDto.additionalItens);
 
     totalValue += additionalTotalValue;
 
-    const orderAdditionalData = await Promise.all(createOrderDto.additionalItens.map(async (item) => {
+    const orderAdditionalData = await Promise.all(orderDto.additionalItens.map(async (item) => {
       const additional = await this.prismaService.additional.findUnique({
         where: { idAdditional: item.idAdditional }
       });
@@ -47,7 +45,7 @@ export class OrderService {
       };
     }));
 
-    const orderItemsData = await Promise.all(createOrderDto.orderItens.map(async (item) => {
+    const orderItemsData = await Promise.all(orderDto.orderItens.map(async (item) => {
 
       const product = await this.prismaService.product.findUnique({
         where: { idProduct: item.product.idProduct }
@@ -62,9 +60,9 @@ export class OrderService {
     }));
 
     const orderData = {
-      typeOfDelivery: TYPE_OF_DELIVERY[createOrderDto.typeOfDelivery],
-      orderStatus: createOrderDto.typeOfDelivery === 0 ? ORDER_STATUS_DELIVERY[0] : ORDER_STATUS_WITHDRAWAL[0],
-      paymentMethod: PAYMENT_METHOD[createOrderDto.paymentMethod],
+      typeOfDelivery: TYPE_OF_DELIVERY[orderDto.typeOfDelivery],
+      orderStatus: orderDto.typeOfDelivery === 0 ? ORDER_STATUS_DELIVERY[0] : ORDER_STATUS_WITHDRAWAL[0],
+      paymentMethod: PAYMENT_METHOD[orderDto.paymentMethod],
       totalAdditional: additionalTotalValue,
       total: totalValue,
       orderAdditional: {
@@ -80,10 +78,10 @@ export class OrderService {
       }
     };
 
-    if (TYPE_OF_DELIVERY[createOrderDto.typeOfDelivery] === "ENTREGA") {
+    if (TYPE_OF_DELIVERY[orderDto.typeOfDelivery] === "ENTREGA") {
       orderData['address'] = {
         connect: {
-          idAddress: createOrderDto.idAddress
+          idAddress: orderDto.idAddress
         }
       };
     }
@@ -126,7 +124,7 @@ export class OrderService {
     });
   }
 
-  private async validateOrderFields(orderDto: CreateOrderDto | UpdateOrderDto, userId: number, isUpdate = false, orderId?: number) {
+  private async validateOrderFields(orderDto: OrderDto, userId: number, isUpdate = false, orderId?: number) {
     if (!TYPE_OF_DELIVERY[orderDto.typeOfDelivery]) this.exceptionHandler.errorBadRequestResponse(`Tipo de entrega: ${orderDto.typeOfDelivery} inválido!`);
 
     const isEntrega = TYPE_OF_DELIVERY[orderDto.typeOfDelivery] === "ENTREGA";
@@ -297,17 +295,17 @@ export class OrderService {
     }
   }
 
-  async update(id: number, updateOrderDto: UpdateOrderDto, userId: number) {
+  async update(id: number, orderDto: OrderDto, userId: number) {
 
-    await this.validateOrderFields(updateOrderDto, userId, true, id);
+    await this.validateOrderFields(orderDto, userId, true, id);
 
-    let totalValue = await this.calculateTotalOrderValue(updateOrderDto.orderItens);
+    let totalValue = await this.calculateTotalOrderValue(orderDto.orderItens);
 
-    const additionalTotalValue = await this.calculateTotalAdditionalValue(updateOrderDto.additionalItens);
+    const additionalTotalValue = await this.calculateTotalAdditionalValue(orderDto.additionalItens);
 
     totalValue += additionalTotalValue;
 
-    const orderAdditionalData = await Promise.all(updateOrderDto.additionalItens.map(async (item) => {
+    const orderAdditionalData = await Promise.all(orderDto.additionalItens.map(async (item) => {
       const additional = await this.prismaService.additional.findUnique({
         where: { idAdditional: item.idAdditional }
       });
@@ -319,7 +317,7 @@ export class OrderService {
       };
     }));
 
-    const orderItemsData = await Promise.all(updateOrderDto.orderItens.map(async (item) => {
+    const orderItemsData = await Promise.all(orderDto.orderItens.map(async (item) => {
 
       const product = await this.prismaService.product.findUnique({
         where: { idProduct: item.product.idProduct }
@@ -336,8 +334,8 @@ export class OrderService {
     return await this.prismaService.order.update({
       where: { idOrder: id },
       data: {
-        typeOfDelivery: TYPE_OF_DELIVERY[updateOrderDto.typeOfDelivery],
-        paymentMethod: PAYMENT_METHOD[updateOrderDto.paymentMethod],
+        typeOfDelivery: TYPE_OF_DELIVERY[orderDto.typeOfDelivery],
+        paymentMethod: PAYMENT_METHOD[orderDto.paymentMethod],
         totalAdditional: additionalTotalValue,
         total: totalValue,
         orderAdditional: {
