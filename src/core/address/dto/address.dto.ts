@@ -1,0 +1,21 @@
+import { coerceRequiredString } from 'src/shared/utils/helpers/zod.helper';
+import { z } from 'zod';
+
+export const AddressDtoSchema = z.object({
+    cep: z.string(),
+    state: z.string(),
+    city: z.string(),
+    district: z.string(),
+    road: z.string(),
+    number: coerceRequiredString(),
+    complement: z.string().nullable().optional(),
+});
+
+export type AddressDto = z.infer<typeof AddressDtoSchema>;
+
+export const AddressQuerySchema = z.object({
+    page: z.number().default(1),
+    perPage: z.number().default(10)
+});
+
+export type AddressQuery = z.infer<typeof AddressQuerySchema>;

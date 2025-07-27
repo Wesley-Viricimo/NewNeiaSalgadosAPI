@@ -1,6 +1,4 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
-import { CreateAddressDto } from './dto/create-address.dto';
-import { UpdateAddressDto } from './dto/update-address.dto';
 import { PaginatorTypes, paginator } from '@nodeteam/nestjs-prisma-pagination';
 import { ViaCepService } from 'src/service/viacep.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
@@ -9,6 +7,7 @@ import { Address, Prisma } from '@prisma/client';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { userSelectConfig, addressByIdSelectConfig, addressSelectConfig } from './config/address-select-config';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
+import { AddressDto, AddressQuery } from './dto/address.dto';
 
 @Injectable()
 export class AddressService {
@@ -18,19 +17,19 @@ export class AddressService {
     private readonly exceptionHandler: ExceptionHandler
 ){}
 
-  async create(address: CreateAddressDto, userId: number) {
+  async create(addressDto: AddressDto, userId: number) {
 
-    await this.validationFieldsAddress(address, userId);
+    await this.validationFieldsAddress(addressDto, userId);
     
     return await this.prismaService.address.create({
       data: {
-        cep: address.cep,
-        state: address.state,
-        city: address.city,
-        district: address.district,
-        road: address.road,
-        number: address.number,
-        complement: address.complement,
+        cep: addressDto.cep,
+        state: addressDto.state,
+        city: addressDto.city,
+        district: addressDto.district,
+        road: addressDto.road,
+        number: addressDto.number,
+        complement: addressDto.complement,
         user: {
           connect: {
             idUser: userId
@@ -117,7 +116,7 @@ export class AddressService {
     } 
   }
 
-  private async validationFieldsAddress(address: CreateAddressDto, userId: number) {
+  private async validationFieldsAddress(addressDto: AddressDto, userId: number) {
     const user = await this.prismaService.user.findUnique({
       where: { idUser: userId }
     });
@@ -127,20 +126,20 @@ export class AddressService {
     const addressExists = await this.prismaService.address.findFirst({
       where: {
         idUser: userId,
-        cep: address.cep,
-        state: address.state,
-        district: address.district,
-        road: address.road,
-        number: address.number
+        cep: addressDto.cep,
+        state: addressDto.state,
+        district: addressDto.district,
+        road: addressDto.road,
+        number: addressDto.number
       }
     });
 
     if(addressExists) this.exceptionHandler.errorBadRequestResponse(`Este ${AddressSide['address']} endereço já foi cadastrado no sistema!`);
   }
 
-  async findAddressesByUserId(userId: number, page: number, perPage: number): Promise<PaginatedOutputDto<Object>>{
+  async findAddressesByUserId(userId: number, addressQuery: AddressQuery): Promise<PaginatedOutputDto<Object>>{
     
-    const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
+    const paginate: PaginatorTypes.PaginateFunction = paginator({ page: addressQuery.page, perPage: addressQuery.perPage });
 
     const selectedFields = addressSelectConfig;
 
@@ -150,7 +149,7 @@ export class AddressService {
         where: { idUser: userId }, 
         select: selectedFields
       },
-      { page: page, perPage: perPage }
+      { page: addressQuery.page, perPage: addressQuery.perPage }
     )
     .then(response => {
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereços listados com sucesso.' };
@@ -163,7 +162,7 @@ export class AddressService {
     });
   }
 
-  async update(id: number, updateAddressDto: UpdateAddressDto, userId: number) {
+  async update(id: number, addressDto: AddressDto, userId: number) {
 
     const address = await this.prismaService.address.findUnique({
       where: { idAddress: id }
@@ -176,13 +175,13 @@ export class AddressService {
     return await this.prismaService.address.update({
       where: { idAddress: id },
       data: {
-        cep: updateAddressDto.cep,
-        state: updateAddressDto.state,
-        city: updateAddressDto.city,
-        district: updateAddressDto.district,
-        road: updateAddressDto.road,
-        number: updateAddressDto.number,
-        complement: updateAddressDto.complement,
+        cep: addressDto.cep,
+        state: addressDto.state,
+        city: addressDto.city,
+        district: addressDto.district,
+        road: addressDto.road,
+        number: addressDto.number,
+        complement: addressDto.complement,
       },
       include: {
         user: userSelectConfig

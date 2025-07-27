@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { AddressService } from './address.service';
 import { ApiPaginatedResponse } from 'src/shared/decorators/pagination.decorator';
-import { CreateAddressDto } from './dto/create-address.dto';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
-import { UpdateAddressDto } from './dto/update-address.dto';
 import { Address } from './entities/address.entity';
 import { FastifyRequest } from 'fastify';
+import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
+import { AddressDto, AddressDtoSchema, AddressQuery, AddressQuerySchema } from './dto/address.dto';
 
 @Controller('api/v1/address')
 export class AddressController {
@@ -13,7 +13,10 @@ export class AddressController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() address: CreateAddressDto, @Req() request: FastifyRequest) {
+  create(
+    @Body(new ZodValidationPipe(AddressDtoSchema)) address: AddressDto, 
+    @Req() request: FastifyRequest
+  ) {
     return this.addressService.create(address, request['userId']);
   }
 
@@ -31,20 +34,19 @@ export class AddressController {
   @ApiPaginatedResponse(Address)
   async findAddressByUserId(
     @Req() request: FastifyRequest,
-    @Query('page') page: number = 1,
-    @Query('perPage') perPage: number = 10
+    @Query(new ZodValidationPipe(AddressQuerySchema)) addressQuery: AddressQuery
   ): Promise<PaginatedOutputDto<Object>> {
-    return await this.addressService.findAddressesByUserId(request['userId'], page, perPage);
+    return await this.addressService.findAddressesByUserId(request['userId'], addressQuery);
   }
 
   @Patch(':id')
   @HttpCode(HttpStatus.CREATED)
   update(
     @Param('id') id: string, 
-    @Body() updateAddressDto: UpdateAddressDto,
+    @Body(new ZodValidationPipe(AddressDtoSchema)) address: AddressDto, 
     @Req() request: FastifyRequest
   ) {
-    return this.addressService.update(+id, updateAddressDto, request['userId']);
+    return this.addressService.update(+id, address, request['userId']);
   }
 
   @Delete(':id')
