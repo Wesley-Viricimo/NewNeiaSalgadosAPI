@@ -7,15 +7,12 @@ import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { userSelectConfig, userTokenSelectConfig } from './config/user-select-config';
 import { Prisma, User } from '@prisma/client';
-import { ChangeUserStatusDTO } from './dto/user-status.dto';
-import { MailConfirmation } from './dto/mail-confirmation.dto';
 import { ROLES } from './constants/users.constants';
-import { MailResendDto } from './dto/mail-resend-dto';
 import { EmailService } from 'src/service/aws/send-email.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
-import { UserDto, UserQuery, UserUpdateParams } from './dto/user.dto';
+import { ChangeUserStatusDto, MailConfirmationDto, ResendEmailDto, UserDto, UserQuery, UserUpdateParams } from './dto/user.dto';
 
 @Injectable()
 export class UserService {
@@ -334,7 +331,7 @@ export class UserService {
       })
   }
 
-  async confirmationCode(mailConfirmation: MailConfirmation) {
+  async confirmationCode(mailConfirmation: MailConfirmationDto) {
 
     const user = await this.prismaService.user.findFirst({
       where: { email: mailConfirmation.email }
@@ -393,7 +390,7 @@ export class UserService {
     }
   }
 
-  async resendConfirmationCode(mailResendDto: MailResendDto) {
+  async resendConfirmationCode(mailResendDto: ResendEmailDto) {
 
     const user = await this.prismaService.user.findFirst({
       where: { email: mailResendDto.email }
@@ -417,10 +414,10 @@ export class UserService {
     }
   }
 
-  async changeUserActivity(id: number, changeUserStatusDTO: ChangeUserStatusDTO, idUser: number) {
+  async changeUserActivity(changeUserStatusDTO: ChangeUserStatusDto, idUser: number) {
 
     const user = await this.prismaService.user.findUnique({
-      where: { idUser: id }
+      where: { idUser: changeUserStatusDTO.userId }
     });
 
     if (user.idUser == idUser) this.exceptionHandler.errorBadRequestResponse('Não é possível alterar o próprio status de atividade!');
@@ -430,7 +427,7 @@ export class UserService {
     const selectedFields = userSelectConfig;
 
     return await this.prismaService.user.update({
-      where: { idUser: id },
+      where: { idUser: changeUserStatusDTO.userId },
       data: { isActive: changeUserStatusDTO.isActive },
       select: selectedFields
     })

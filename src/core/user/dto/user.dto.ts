@@ -1,12 +1,13 @@
+import { coerceRequiredString } from "src/shared/utils/helpers/zod.helper";
 import { z } from "zod";
 
 export const UserDtoSchema = z.object({
     name: z.string(),
     surname: z.string(),
-    cpf: z.string(),
-    phone: z.string(),
-    email: z.string(),
-    password: z.string(),
+    cpf: coerceRequiredString(),
+    phone: coerceRequiredString(),
+    email: z.string().email('Invalid Email'),
+    password: coerceRequiredString(),
     role: z.string().nullable().optional()
 });
 
@@ -28,3 +29,23 @@ export const UserUpdateParamsSchema = z.object({
 });
 
 export type UserUpdateParams = z.infer<typeof UserUpdateParamsSchema>;
+
+export const MailConfirmationSchema = z.object({
+    email: z.string().email('Invalid Email'),
+    code: z.string()
+});
+
+export type MailConfirmationDto = z.infer<typeof MailConfirmationSchema>;
+
+export const ChangeUserStatusSchema = z.object({
+    isActive: z.boolean(),
+    userId: z.number()
+});
+
+export type ChangeUserStatusDto = z.infer<typeof ChangeUserStatusSchema>;
+
+export const ResendEmailSchema = z.object({
+    email: z.string()
+});
+
+export type ResendEmailDto = z.infer<typeof ResendEmailSchema>;

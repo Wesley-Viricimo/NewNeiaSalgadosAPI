@@ -5,12 +5,9 @@ import { ApiPaginatedResponse } from 'src/shared/decorators/pagination.decorator
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { User } from './entities/user.entity';
-import { ChangeUserStatusDTO } from './dto/user-status.dto';
 import { FastifyRequest } from 'fastify';
-import { MailConfirmation } from './dto/mail-confirmation.dto';
-import { MailResendDto } from './dto/mail-resend-dto';
 import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
-import { UserDto, UserDtoSchema, UserQuery, UserQuerySchema, UserUpdateParams, UserUpdateParamsSchema } from './dto/user.dto';
+import { ChangeUserStatusDto, ChangeUserStatusSchema, MailConfirmationDto, MailConfirmationSchema, ResendEmailDto, ResendEmailSchema, UserDto, UserDtoSchema, UserQuery, UserQuerySchema, UserUpdateParams, UserUpdateParamsSchema } from './dto/user.dto';
 
 @Controller('api/v1/user')
 export class UserController {
@@ -62,25 +59,24 @@ export class UserController {
 
   @Public()
   @Post('confirm-code')
-  confirmationCode(@Body() mailConfirmation: MailConfirmation) {
+  confirmationCode(@Body(new ZodValidationPipe(MailConfirmationSchema)) mailConfirmation: MailConfirmationDto) {
     return this.userService.confirmationCode(mailConfirmation);
   }
 
   @Public()
   @Post('resend-confirm-code')
-  resendConfirmationCode(@Body() mailResendDto: MailResendDto) {
+  resendConfirmationCode(@Body(new ZodValidationPipe(ResendEmailSchema)) mailResendDto: ResendEmailDto) {
     return this.userService.resendConfirmationCode(mailResendDto);
   }
 
   @Roles('ADMIN', 'DEV')
-  @Patch('changeUserActivity/:id')
+  @Patch('changeUserActivity')
   @HttpCode(HttpStatus.CREATED)
   changeUserActivity(
-    @Param('id') id: string, 
-    @Body() changeUserStatusDTO: ChangeUserStatusDTO,
+    @Body(new ZodValidationPipe(ChangeUserStatusSchema)) changeUserStatusDTO: ChangeUserStatusDto,
     @Req() request: FastifyRequest
   ) {
-    return this.userService.changeUserActivity(+id, changeUserStatusDTO, request['userId']);
+    return this.userService.changeUserActivity(changeUserStatusDTO, request['userId']);
   }
 
   @Post('save-notificationToken')
