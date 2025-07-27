@@ -1,6 +1,4 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { Category, Prisma } from '@prisma/client';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
@@ -8,6 +6,7 @@ import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
+import { CategoryDto, CategoryQuery } from './dto/category.dto';
 
 @Injectable()
 export class CategoryService {
@@ -17,11 +16,11 @@ export class CategoryService {
     private readonly auditingService: AuditingService
   ) { }
 
-  async create(createCategoryDto: CreateCategoryDto, idUser: number) {
+  async create(categoryDto: CategoryDto, idUser: number) {
     const categoryExists = await this.prismaService.category.findFirst({
       where: {
         description: {
-          equals: createCategoryDto.description,
+          equals: categoryDto.description,
           mode: 'insensitive'
         },
       },
@@ -32,7 +31,7 @@ export class CategoryService {
     return await this.prismaService.category.create({
       select: { idCategory: true, description: true },
       data: {
-        description: createCategoryDto.description
+        description: categoryDto.description
       }
     }).then(async (result) => {
 
@@ -59,12 +58,12 @@ export class CategoryService {
     })
   }
 
-  async findAll(page: number, perPage: number, description: string): Promise<PaginatedOutputDto<Object>> {
-    if (page === 0 && perPage === 0) {
+  async findAll(categoryQuery: CategoryQuery): Promise<PaginatedOutputDto<Object>> {
+    if (categoryQuery.page === 0 && categoryQuery.perPage === 0) {
       const categories = await this.prismaService.category.findMany({
         where: {
           description: {
-            contains: description,
+            contains: categoryQuery.description,
             mode: 'insensitive'
           }
         },
@@ -80,14 +79,14 @@ export class CategoryService {
       };
     }
 
-    const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
+    const paginate: PaginatorTypes.PaginateFunction = paginator({ page: categoryQuery.page, perPage: categoryQuery.perPage });
 
     return await paginate<Category, Prisma.CategoryFindManyArgs>(
       this.prismaService.category,
       {
         where: {
           description: {
-            contains: description,
+            contains: categoryQuery.description,
             mode: 'insensitive'
           }
         },
@@ -124,7 +123,7 @@ export class CategoryService {
     }
   }
 
-  async update(id: number, updateCategoryDto: UpdateCategoryDto, idUser: number) {
+  async update(id: number, categoryDto: CategoryDto, idUser: number) {
 
     const category = await this.prismaService.category.findUnique({
       where: { idCategory: id }
@@ -132,13 +131,13 @@ export class CategoryService {
 
     if (!category) this.exceptionHandler.errorNotFoundResponse(`Esta categoria não está cadastrada no sistema!`);
 
-    await this.validateExistsCategory(category, updateCategoryDto);
+    await this.validateExistsCategory(category, categoryDto);
 
     return await this.prismaService.category.update({
       where: { idCategory: id },
       data: {
         idCategory: id,
-        description: updateCategoryDto.description
+        description: categoryDto.description
       }
     })
       .then(async (result) => {
@@ -203,9 +202,9 @@ export class CategoryService {
       })
   }
 
-  async validateExistsCategory(category: Category, updateCategoryDto: UpdateCategoryDto) {
+  async validateExistsCategory(category: Category, categoryDto: CategoryDto) {
     const existsCategory = await this.prismaService.category.findFirst({
-      where: { description: updateCategoryDto.description }
+      where: { description: categoryDto.description }
     });
 
     if (existsCategory && (category.idCategory !== existsCategory.idCategory)) this.exceptionHandler.errorBadRequestResponse(`Esta categoria já foi cadastrada no sistema!`);

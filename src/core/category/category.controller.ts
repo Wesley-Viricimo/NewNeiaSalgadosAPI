@@ -1,10 +1,10 @@
 import { FastifyRequest } from 'fastify';
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req, Query } from '@nestjs/common';
 import { CategoryService } from './category.service';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
+import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
+import { CategoryDto, CategoryDtoSchema, CategoryQuery, CategoryQuerySchema } from './dto/category.dto';
 
 @Controller('api/v1/category')
 export class CategoryController {
@@ -16,20 +16,18 @@ export class CategoryController {
   @HttpCode(HttpStatus.CREATED)
   @Post()
   create(
-    @Body() createCategoryDto: CreateCategoryDto,
+    @Body(new ZodValidationPipe(CategoryDtoSchema)) categoryDto: CategoryDto,
     @Req() request: FastifyRequest
   ) {
-    return this.categoryService.create(createCategoryDto, request['userId']);
+    return this.categoryService.create(categoryDto, request['userId']);
   }
 
   @HttpCode(HttpStatus.OK)
   @Get()
   async findAll(
-    @Query('page') page: number = 0,
-    @Query('perPage') perPage: number = 0,
-    @Query('description') description: string
+    @Query(new ZodValidationPipe(CategoryQuerySchema)) categoryQuery: CategoryQuery
   ): Promise<PaginatedOutputDto<Object>> {
-    return await this.categoryService.findAll(page, perPage, description);
+    return await this.categoryService.findAll(categoryQuery);
   }
 
   @HttpCode(HttpStatus.OK)
@@ -42,10 +40,10 @@ export class CategoryController {
   @Patch(':id')
   update(
     @Param('id') id: string, 
-    @Body() updateCategoryDto: UpdateCategoryDto,
+    @Body(new ZodValidationPipe(CategoryDtoSchema)) categoryDto: CategoryDto,
     @Req() request: FastifyRequest
   ) {
-    return this.categoryService.update(+id, updateCategoryDto, request['userId']);
+    return this.categoryService.update(+id, categoryDto, request['userId']);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
