@@ -1,6 +1,4 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { UserSide } from './entities/user.entity';
 import { cpf } from 'cpf-cnpj-validator';
@@ -17,6 +15,7 @@ import { EmailService } from 'src/service/aws/send-email.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
+import { UserDto, UserQuery, UserUpdateParams } from './dto/user.dto';
 
 @Injectable()
 export class UserService {
@@ -28,19 +27,19 @@ export class UserService {
     private readonly auditingService: AuditingService
   ) { }
 
-  async create(user: CreateUserDto) {
+  async create(userDto: UserDto) {
 
-    await this.validateFieldsCreateUser(user);
+    await this.validateFieldsCreateUser(userDto);
 
-    const passwordHash = await hash(user.password, 8);
+    const passwordHash = await hash(userDto.password, 8);
 
     return await this.prismaService.user.create({
       data: {
-        name: user.name,
-        surname: user.surname,
-        cpf: user.cpf,
-        phone: user.phone,
-        email: user.email,
+        name: userDto.name,
+        surname: userDto.surname,
+        cpf: userDto.cpf,
+        phone: userDto.phone,
+        email: userDto.email,
         password: passwordHash
       },
     })
@@ -76,7 +75,7 @@ export class UserService {
       });
   }
 
-  async createAdmin(user: CreateUserDto) {
+  async createAdmin(user: UserDto) {
 
     await this.validateFieldsCreateUser(user);
 
@@ -135,13 +134,13 @@ export class UserService {
     return Math.random().toString(36).substring(2, 7).toUpperCase();
   }
 
-  private async validateFieldsCreateUser(user: CreateUserDto) {
-    if (user.cpf.length > 11) this.exceptionHandler.errorBadRequestResponse(`${UserSide['cpf']} não pode exceder 11 caracteres!`);
-    if (!cpf.isValid(user.cpf)) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['cpf']} não é válido!`);
-    const cpfExists = await this.findUserByCpf(user.cpf);
+  private async validateFieldsCreateUser(userDto: UserDto) {
+    if (userDto.cpf.length > 11) this.exceptionHandler.errorBadRequestResponse(`${UserSide['cpf']} não pode exceder 11 caracteres!`);
+    if (!cpf.isValid(userDto.cpf)) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['cpf']} não é válido!`);
+    const cpfExists = await this.findUserByCpf(userDto.cpf);
     if (cpfExists) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['cpf']} já está cadastrado no sistema!`);
 
-    const emailExists = await this.findUserByEmail(user.email);
+    const emailExists = await this.findUserByEmail(userDto.email);
     if (emailExists) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['email']} já está cadastrado no sistema!`);
   }
 
@@ -161,18 +160,18 @@ export class UserService {
     return user;
   }
 
-  async findAll(user: string, cpf: string, status: string, page: number, perPage: number): Promise<PaginatedOutputDto<Object>> {
+  async findAll(userQuery: UserQuery): Promise<PaginatedOutputDto<Object>> {
 
     const selectedFields = userSelectConfig;
 
-    const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
+    const paginate: PaginatorTypes.PaginateFunction = paginator({ page: userQuery.page, perPage: userQuery.perPage });
 
     const where: Prisma.UserWhereInput = {};
 
-    if (user) where.name = { contains: user, mode: 'insensitive' };
-    if (cpf) where.cpf = { contains: cpf, mode: 'insensitive' };
-    if (status == 'active') where.isActive = true;
-    if (status == 'inactive') where.isActive = false;
+    if (userQuery.user) where.name = { contains: userQuery.user, mode: 'insensitive' };
+    if (userQuery.cpf) where.cpf = { contains: userQuery.cpf, mode: 'insensitive' };
+    if (userQuery.status == 'active') where.isActive = true;
+    if (userQuery.status == 'inactive') where.isActive = false;
 
     return await paginate<User, Prisma.UserFindManyArgs>(
       this.prismaService.user,
@@ -180,7 +179,7 @@ export class UserService {
         where,
         select: selectedFields
       },
-      { page: page, perPage: perPage }
+      { page: userQuery.page, perPage: userQuery.perPage }
     )
       .then(response => {
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuários listados com sucesso.' };
@@ -218,21 +217,21 @@ export class UserService {
     }
   }
 
-  async update(updateUserDto: UpdateUserDto, userId: number) {
+  async update(userDto: UserDto, userId: number) {
 
-    await this.validateFieldsUpdateUser(updateUserDto, userId);
+    await this.validateFieldsUpdateUser(userDto, userId);
 
     let passwordHash: string;
 
-    if (updateUserDto.password) {
-      passwordHash = await hash(updateUserDto.password, 8);
+    if (userDto.password) {
+      passwordHash = await hash(userDto.password, 8);
     }
 
     const updateUserData: any = {
-      name: updateUserDto.name,
-      surname: updateUserDto.surname,
-      cpf: updateUserDto.cpf,
-      email: updateUserDto.email,
+      name: userDto.name,
+      surname: userDto.surname,
+      cpf: userDto.cpf,
+      email: userDto.email,
     };
 
     if (passwordHash) {
@@ -264,7 +263,7 @@ export class UserService {
       })
   }
 
-  private async validateFieldsUpdateUser(user: UpdateUserDto, userId: number) {
+  private async validateFieldsUpdateUser(user: UserDto, userId: number) {
     if (user.cpf) {
       if (user.cpf.length > 11) this.exceptionHandler.errorBadRequestResponse(`${UserSide['cpf']} não pode exceder 11 caracteres!`);
       if (!cpf.isValid(user.cpf)) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['cpf']} não é válido!`);
@@ -279,19 +278,19 @@ export class UserService {
     }
   }
 
-  async updateUserRole(userId: number, role: string, adminId: number) {
-    if (!ROLES[role]) this.exceptionHandler.errorBadRequestResponse(`Não existe a função com o id: ${role}`);
-    if (userId == adminId) this.exceptionHandler.errorBadRequestResponse('Um usuário não pode alterar a própria função!');
+  async updateUserRole(userUpdate: UserUpdateParams, adminId: number) {
+    if (!ROLES[userUpdate.role]) this.exceptionHandler.errorBadRequestResponse(`Não existe a função com o id: ${userUpdate.role}`);
+    if (userUpdate.userId == adminId) this.exceptionHandler.errorBadRequestResponse('Um usuário não pode alterar a própria função!');
 
     const admin = await this.prismaService.user.findUnique({
       where: { idUser: adminId }
     });
 
-    if (ROLES[role] == 'DEV' && ROLES[role] != admin.role) this.exceptionHandler.errorBadRequestResponse(`Somente usuários DEV podem alterar a função do usuário para DEV!`);
-    if (admin.role == 'ADMIN' && ROLES[role] == 'ADMIN') this.exceptionHandler.errorBadRequestResponse('Somente usuários DEV podem alterar a função do usuário para ADMIN!');
+    if (ROLES[userUpdate.role] == 'DEV' && ROLES[userUpdate.role] != admin.role) this.exceptionHandler.errorBadRequestResponse(`Somente usuários DEV podem alterar a função do usuário para DEV!`);
+    if (admin.role == 'ADMIN' && ROLES[userUpdate.role] == 'ADMIN') this.exceptionHandler.errorBadRequestResponse('Somente usuários DEV podem alterar a função do usuário para ADMIN!');
 
     const user = await this.prismaService.user.findUnique({
-      where: { idUser: userId }
+      where: { idUser: userUpdate.userId }
     });
 
     if (!user) this.exceptionHandler.errorBadRequestResponse('Este usuário não está cadastrado no sistema!');
@@ -301,7 +300,7 @@ export class UserService {
 
     return await this.prismaService.user.update({
       where: { idUser: user.idUser },
-      data: { role: ROLES[role] }
+      data: { role: ROLES[userUpdate.role] }
     })
       .then(async (result) => {
 
