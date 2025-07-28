@@ -1,9 +1,9 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
-import { AuthDto } from './dto/AuthDto';
 import { UserService } from 'src/core/user/user.service';
 import { compare } from 'bcryptjs';
 import { TokenService } from './token/token.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
+import { AuthDto } from './dto/auth.dto';
 
 interface TokenAuthPayload {
   idUser: number,
@@ -21,14 +21,13 @@ export class AuthService {
   ){}
 
   async auth(auth: AuthDto) {
-    const { email, password } = auth;
-    const user = await this.userService.findUserByEmail(email);
+    const user = await this.userService.findUserByEmail(auth.email);
 
     if(!user) this.exceptionHandler.errorUnauthorizedResponse('Nome de usuário ou senha incorretos. Verifique e tente novamente.');
 
     if(!user.isActive) this.exceptionHandler.errorUnauthorizedResponse('Este usuário está inativo');
       
-    const compareHash = await compare(password, user.password);
+    const compareHash = await compare(auth.password, user.password);
 
     if(user && compareHash) {
       const payload = this.createPayload(user);
