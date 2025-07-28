@@ -1,6 +1,4 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { CreateAdditionalDto } from './dto/create-additional.dto';
-import { UpdateAdditionalDto } from './dto/update-additional.dto';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { Additional, Prisma } from '@prisma/client';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
@@ -8,6 +6,7 @@ import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
+import { AdditionalDto, AdditionalQuery } from './dto/additional.dto';
 
 @Injectable()
 export class AdditionalService {
@@ -18,9 +17,9 @@ export class AdditionalService {
     private readonly auditingService: AuditingService
   ) { }
 
-  async create(createAdditionalDto: CreateAdditionalDto, idUser: number) {
+  async create(additionalDto: AdditionalDto, idUser: number) {
 
-    await this.validateFieldsCreateAdditional(createAdditionalDto);
+    await this.validateFieldsCreateAdditional(additionalDto);
 
     return await this.prismaService.additional.create({
       select: {
@@ -29,8 +28,8 @@ export class AdditionalService {
         price: true
       },
       data: {
-        description: createAdditionalDto.description,
-        price: createAdditionalDto.price
+        description: additionalDto.description,
+        price: additionalDto.price
       }
     })
       .then(async (result) => {
@@ -58,9 +57,7 @@ export class AdditionalService {
       });
   }
 
-  async validateFieldsCreateAdditional(additionalDto: CreateAdditionalDto) {
-    if (isNaN(Number(additionalDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do adicional deve ser um valor numérico!`);
-
+  async validateFieldsCreateAdditional(additionalDto: AdditionalDto) {
     const existsAdditional = await this.prismaService.additional.findFirst({
       where: { description: additionalDto.description }
     });
@@ -68,7 +65,7 @@ export class AdditionalService {
     if (existsAdditional) this.exceptionHandler.errorBadRequestResponse('Adicional já cadastrado no sistema!');
   }
 
-  async update(id: number, updateAdditionalDto: UpdateAdditionalDto, idUser: number) {
+  async update(id: number, updateAdditionalDto: AdditionalDto, idUser: number) {
 
     const additional = await this.prismaService.additional.findUnique({
       where: { idAdditional: id }
@@ -109,9 +106,7 @@ export class AdditionalService {
       });
   }
 
-  async validateFieldsUpdateAdditional(additional: Additional, updateAdditionalDto: UpdateAdditionalDto) {
-    if (isNaN(Number(updateAdditionalDto.price))) this.exceptionHandler.errorBadRequestResponse(`O preço do adicional deve ser um valor numérico!`);
-
+  async validateFieldsUpdateAdditional(additional: Additional, updateAdditionalDto: AdditionalDto) {
     const existsAdditional = await this.prismaService.additional.findFirst({
       where: { description: updateAdditionalDto.description }
     })
@@ -119,12 +114,12 @@ export class AdditionalService {
     if (existsAdditional && (additional.idAdditional !== existsAdditional.idAdditional)) this.exceptionHandler.errorBadRequestResponse(`Este adicional já foi cadastrada no sistema!`);
   }
 
-  async findAllAdditional(page: number, perPage: number, description: string): Promise<PaginatedOutputDto<Object>> {
-    if (page === 0 && perPage === 0) {
+  async findAllAdditional(additionalQuery: AdditionalQuery): Promise<PaginatedOutputDto<Object>> {
+    if (additionalQuery.page === 0 && additionalQuery.perPage === 0) {
       const additional = await this.prismaService.additional.findMany({
         where: {
           description: {
-            contains: description,
+            contains: additionalQuery.description,
             mode: 'insensitive'
           }
         },
@@ -141,14 +136,14 @@ export class AdditionalService {
       };
     }
 
-    const paginate: PaginatorTypes.PaginateFunction = paginator({ page, perPage });
+    const paginate: PaginatorTypes.PaginateFunction = paginator({ page: additionalQuery.page, perPage: additionalQuery.perPage });
 
     return await paginate<Additional, Prisma.AdditionalFindManyArgs>(
       this.prismaService.additional,
       {
         where: {
           description: {
-            contains: description,
+            contains: additionalQuery.description,
             mode: 'insensitive'
           }
         },

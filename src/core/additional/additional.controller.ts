@@ -1,10 +1,10 @@
 import { FastifyRequest } from 'fastify';
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, HttpCode, Req, Query } from '@nestjs/common';
 import { AdditionalService } from './additional.service';
-import { CreateAdditionalDto } from './dto/create-additional.dto';
-import { UpdateAdditionalDto } from './dto/update-additional.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
+import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
+import { AdditionalDto, AdditionalDtoSchema, AdditionalQuery, AdditionalQuerySchema } from './dto/additional.dto';
 
 @Controller('api/v1/additional')
 export class AdditionalController {
@@ -14,10 +14,10 @@ export class AdditionalController {
   @HttpCode(HttpStatus.CREATED)
   @Post()
   create(
-    @Body() createAdditionalDto: CreateAdditionalDto,
+    @Body(new ZodValidationPipe(AdditionalDtoSchema)) additionalDto: AdditionalDto,
     @Req() request: FastifyRequest
   ) {
-    return this.additionalService.create(createAdditionalDto, request['userId']);
+    return this.additionalService.create(additionalDto, request['userId']);
   }
 
   @Roles('ADMIN', 'DEV')
@@ -25,20 +25,18 @@ export class AdditionalController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() updateAdditionalDto: UpdateAdditionalDto,
+    @Body(new ZodValidationPipe(AdditionalDtoSchema)) additionalDto: AdditionalDto,
     @Req() request: FastifyRequest
   ) {
-    return this.additionalService.update(+id, updateAdditionalDto, request['userId']);
+    return this.additionalService.update(+id, additionalDto, request['userId']);
   }
 
   @HttpCode(HttpStatus.OK)
   @Get()
   async findAllAdditional(
-    @Query('page') page: number = 0,
-    @Query('perPage') perPage: number = 0,
-    @Query('description') description: string
+    @Query(new ZodValidationPipe(AdditionalQuerySchema)) additionalQuery: AdditionalQuery
   ): Promise<PaginatedOutputDto<Object>> {
-    return await this.additionalService.findAllAdditional(page, perPage, description);
+    return await this.additionalService.findAllAdditional(additionalQuery);
   }
 
   @Roles('ADMIN', 'DEV')
