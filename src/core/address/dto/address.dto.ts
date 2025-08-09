@@ -7,8 +7,8 @@ export const AddressDtoSchema = z.object({
     city: z.string(),
     district: z.string(),
     road: z.string(),
-    number: coerceRequiredString(),
-    complement: z.string().nullable().optional(),
+    number: z.string(),
+    complement: z.string().optional(),
 });
 
 export type AddressDto = z.infer<typeof AddressDtoSchema>;
