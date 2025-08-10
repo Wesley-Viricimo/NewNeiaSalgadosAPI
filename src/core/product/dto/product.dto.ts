@@ -12,11 +12,11 @@ export const ProductDtoSchema = z.object({
 export type ProductDto = z.infer<typeof ProductDtoSchema>;
 
 export const ProductQuerySchema = z.object({
-    page: z.number().default(1),
-    perPage: z.number().default(10),
+    page: zStringToNumber().default(1),
+    perPage: zStringToNumber().default(10),
     title: z.string().nullable().optional(),
     description: z.string().nullable().optional(),
-    category: z.number().nullable().optional()
+    category: zStringToNumber().nullable().optional()
 });
 
 export type ProductQuery = z.infer<typeof ProductQuerySchema>;

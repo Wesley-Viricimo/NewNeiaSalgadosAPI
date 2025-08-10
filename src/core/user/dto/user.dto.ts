@@ -1,4 +1,4 @@
-import { coerceRequiredString } from "src/shared/utils/helpers/zod.helper";
+import { coerceRequiredString, zStringToNumber } from "src/shared/utils/helpers/zod.helper";
 import { z } from "zod";
 
 export const UserDtoSchema = z.object({
@@ -14,8 +14,8 @@ export const UserDtoSchema = z.object({
 export type UserDto = z.infer<typeof UserDtoSchema>;
 
 export const UserQuerySchema = z.object({
-    page: z.number().default(1),
-    perPage: z.number().default(10),
+    page: zStringToNumber().default(1),
+    perPage: zStringToNumber().default(10),
     user: z.string().nullable().optional(),
     cpf: z.string().nullable().optional(),
     status: z.string().nullable().optional()
@@ -24,8 +24,8 @@ export const UserQuerySchema = z.object({
 export type UserQuery = z.infer<typeof UserQuerySchema>;
 
 export const UserUpdateParamsSchema = z.object({
-    userId: z.number(),
-    role: z.string()
+    userId: zStringToNumber(),
+    role: zStringToNumber()
 });
 
 export type UserUpdateParams = z.infer<typeof UserUpdateParamsSchema>;
@@ -39,7 +39,7 @@ export type MailConfirmationDto = z.infer<typeof MailConfirmationSchema>;
 
 export const ChangeUserStatusSchema = z.object({
     isActive: z.boolean(),
-    userId: z.number()
+    userId: zStringToNumber()
 });
 
 export type ChangeUserStatusDto = z.infer<typeof ChangeUserStatusSchema>;

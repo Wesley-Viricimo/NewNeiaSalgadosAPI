@@ -1,3 +1,4 @@
+import { zStringToInt, zStringToNumber } from 'src/shared/utils/helpers/zod.helper';
 import { z } from 'zod';
 
 const AdditionalItemDtoSchema = z.object({
@@ -17,9 +18,9 @@ const OrderItemDtoSchema = z.object({
 });
 
 export const OrderDtoSchema = z.object({
-    idAddress: z.number().nullable().optional(),
-    paymentMethod: z.number(),
-    typeOfDelivery: z.number(),
+    idAddress: zStringToNumber().nullable().optional(),
+    paymentMethod: zStringToNumber(),
+    typeOfDelivery: zStringToNumber(),
     additionalItens: z.array(AdditionalItemDtoSchema).nullable().optional(),
     orderItens: z.array(OrderItemDtoSchema)
 });
@@ -27,8 +28,8 @@ export const OrderDtoSchema = z.object({
 export type OrderDto = z.infer<typeof OrderDtoSchema>;
 
 export const OrderFindAllQuerySchema = z.object({
-    page: z.number().default(1),
-    perPage: z.number().default(10),
+    page: zStringToNumber().default(1),
+    perPage: zStringToNumber().default(10),
     user: z.string().nullable().optional(),
     status: z.string().nullable().optional()
 });
@@ -36,8 +37,8 @@ export const OrderFindAllQuerySchema = z.object({
 export type OrderFindAllQuery = z.infer<typeof OrderFindAllQuerySchema>;
 
 export const OrderUpdateStatusParamsSchema = z.object({
-    orderId: z.number(),
-    orderStatus: z.number()
+    orderId: zStringToNumber(),
+    orderStatus: zStringToNumber()
 });
 
 export type OrderUpdateStatusParams = z.infer<typeof OrderUpdateStatusParamsSchema>;

@@ -3,7 +3,7 @@ import  { z } from "zod";
 
 export const AuthDtoSchema = z.object({
     email: z.string(),
-    password: coerceRequiredString()
+    password: z.string()
 });
 
 export type AuthDto = z.infer<typeof AuthDtoSchema>;

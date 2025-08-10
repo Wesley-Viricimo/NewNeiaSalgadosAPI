@@ -1,4 +1,4 @@
-import { coerceRequiredString } from 'src/shared/utils/helpers/zod.helper';
+import { coerceRequiredString, zStringToNumber } from 'src/shared/utils/helpers/zod.helper';
 import { z } from 'zod';
 
 export const AddressDtoSchema = z.object({
@@ -14,8 +14,8 @@ export const AddressDtoSchema = z.object({
 export type AddressDto = z.infer<typeof AddressDtoSchema>;
 
 export const AddressQuerySchema = z.object({
-    page: z.number().default(1),
-    perPage: z.number().default(10)
+    page: zStringToNumber().default(1),
+    perPage: zStringToNumber().default(10)
 });
 
 export type AddressQuery = z.infer<typeof AddressQuerySchema>;
