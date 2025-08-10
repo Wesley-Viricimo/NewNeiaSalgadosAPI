@@ -9,17 +9,7 @@ export class ZodValidationPipe implements PipeTransform {
   constructor(private readonly schema: ZodSchema) {}
 
   transform(value: any) {
-    const transformedValue = Object.keys(value).reduce((acc, key) => {
-      const val = value[key];
-      if (!isNaN(Number(val))) {
-        acc[key] = Number(val);
-      } else {
-        acc[key] = val;
-      }
-      return acc;
-    }, {});
-
-    const result = this.schema.safeParse(transformedValue);
+    const result = this.schema.safeParse(value);
 
     if (!result.success) {
       const errors = this.formatErrors(result.error.issues);

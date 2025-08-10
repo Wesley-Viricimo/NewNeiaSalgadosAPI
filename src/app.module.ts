@@ -12,6 +12,7 @@ import { PrismaService } from './shared/prisma/prisma.service';
 import { ExceptionHandler } from './shared/utils/exceptions/exceptions-handler';
 import { CategoryModule } from './core/category/category.module';
 import { AdditionalModule } from './core/additional/additional.module';
+import { NotificationsGateway } from './core/gateway/notifications.gateway';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AdditionalModule } from './core/additional/additional.module';
     AppService,
     PrismaService,
     ExceptionHandler,
+    NotificationsGateway,
     {
       provide: APP_GUARD,
       useClass: AuthGuard
