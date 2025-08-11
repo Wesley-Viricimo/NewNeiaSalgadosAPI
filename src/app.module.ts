@@ -13,6 +13,7 @@ import { ExceptionHandler } from './shared/utils/exceptions/exceptions-handler';
 import { CategoryModule } from './core/category/category.module';
 import { AdditionalModule } from './core/additional/additional.module';
 import { NotificationsGateway } from './core/gateway/notifications.gateway';
+import { NotificationModule } from './core/notification/notification.module';
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { NotificationsGateway } from './core/gateway/notifications.gateway';
     AddressModule,
     OrderModule,
     CategoryModule,
-    AdditionalModule
+    AdditionalModule,
+    NotificationModule
   ],
   controllers: [AppController],
   providers: [
