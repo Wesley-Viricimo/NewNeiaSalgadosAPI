@@ -23,6 +23,7 @@ model User {
   address               Address[]
   order                 Order[]
   auditing              Auditing[]
+  notificationsRead     NotificationRead[]
   notificationToken     UserNotificationToken?  @relation("UserToNotificationToken")
   userActivationCode    UserActivationCode? @relation("UserToActivationCode")  
   createdAt             DateTime            @default(now())
@@ -166,5 +167,28 @@ model Auditing {
 
   @@schema("sales")
 }
+
+model Notification {
+  idNotification        Int                 @id @default(autoincrement())   
+  description           String
+  read                  Boolean             @default(false)
+  readBy                NotificationRead[]
+  createdAt             DateTime            @default(now())
+
+  @@schema("sales")
+}
+
+model NotificationRead {
+  idNotificationRead    Int                 @id @default(autoincrement())
+  idNotification        Int
+  idUser                Int
+  notification          Notification        @relation(fields: [idNotification], references: [idNotification], onDelete: Cascade, map: "fk_notificationread_notification")
+  user                  User                @relation(fields: [idUser], references: [idUser], onDelete: Cascade, map: "fk_notificationread_user")
+  createdAt             DateTime            @default(now())
+
+  @@unique([idNotification, idUser])
+  @@schema("sales")
+}
+
 
 
