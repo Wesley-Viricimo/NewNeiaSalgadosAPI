@@ -184,7 +184,7 @@ model NotificationRead {
   idUser                Int
   notification          Notification        @relation(fields: [idNotification], references: [idNotification], onDelete: Cascade, map: "fk_notificationread_notification")
   user                  User                @relation(fields: [idUser], references: [idUser], onDelete: Cascade, map: "fk_notificationread_user")
-  createdAt             DateTime            @default(now())
+  readAt                DateTime            @default(now()) @map("createdAt")
 
   @@unique([idNotification, idUser])
   @@schema("sales")
