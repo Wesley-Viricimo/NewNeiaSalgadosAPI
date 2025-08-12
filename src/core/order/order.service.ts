@@ -7,12 +7,12 @@ import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { userSelectConfig, addressSelectConfig, orderItensSelectConfig, orderSelectFields, orderSelectByIdFields, additionalsSelectFields } from 'src/core/order/config/order-select-config';
 import { subMinutes, isAfter, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { NotificationService } from 'src/service/notification.service';
 import getMessageStatus from './constants/order.messages';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
 import { AdditionalItemDto, OrderDto, OrderFindAllQuery, OrderUpdateStatusParams } from './dto/order-dto';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class OrderService {
@@ -100,7 +100,13 @@ export class OrderService {
         where: { idUser: order.idUser }
       });
 
-      if (userNotificationToken) await this.notificationService.sendPushNotification(userNotificationToken.token, ORDER_PLACED.title, ORDER_PLACED.body);
+      if (userNotificationToken) await this.notificationService.sendNotificationToUser(userNotificationToken.token, ORDER_PLACED.title, ORDER_PLACED.body);
+
+      const user = await this.prismaService.user.findUnique({
+        where: { idUser: userId }
+      })
+      
+      await this.notificationService.sendNotificationToAdmin(`Novo pedido de ${user.surname}`, `O usuário ${user.surname} acabou de realizar um pedido!`);
 
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido realizado com sucesso!' };
       return {
@@ -448,7 +454,7 @@ export class OrderService {
 
         const messageStatus = getMessageStatus(orderStatus, typeOfDelivery);
         if (userNotificationToken) {
-          await this.notificationService.sendPushNotification(userNotificationToken.token, messageStatus.title, messageStatus.body);
+          await this.notificationService.sendNotificationToUser(userNotificationToken.token, messageStatus.title, messageStatus.body);
         }
 
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Status do pedido atualizado com sucesso!' };

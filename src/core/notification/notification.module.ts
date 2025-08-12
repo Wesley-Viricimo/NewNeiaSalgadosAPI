@@ -4,8 +4,10 @@ import { NotificationController } from './notification.controller';
 import { ErrorExceptionFilters } from 'src/service/errorResponse.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
+  imports: [HttpModule],
   controllers: [NotificationController],
   providers: [
     NotificationService,
