@@ -2,6 +2,7 @@ import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDiscon
 import { Server, Socket } from 'socket.io'; // Import Socket for type definition
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { NotificationGatewayDto } from './dto/notifications.gateway.dto';
+import { Notification } from '@prisma/client';
 
 @WebSocketGateway({
     cors: {
@@ -18,7 +19,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     async handleConnection(socket: Socket) {
         const userId = socket.handshake.query.userId as string;
-        
+
         if (!userId) {
             socket.disconnect();
             return;
@@ -54,12 +55,10 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         }
     }
 
-    @SubscribeMessage('response-query')
-    async listen(@MessageBody() notification: NotificationGatewayDto) {
-        // Emit the notification to all role-based rooms
+    emitToAllRoles(event: string, notification: Notification) {
         const roles = ['dev', 'admin', 'comercial'];
         for (const role of roles) {
-            this.server.to(role).emit('response-query', notification);
+            this.server.to(role).emit(event, notification);
         }
     }
 }

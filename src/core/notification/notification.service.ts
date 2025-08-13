@@ -3,6 +3,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { lastValueFrom } from 'rxjs';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
+import { NotificationsGateway } from '../gateway/notifications.gateway';
 
 @Injectable()
 export class NotificationService {
@@ -12,6 +13,7 @@ export class NotificationService {
         private readonly prismaService: PrismaService,
         private readonly exceptionHandler: ExceptionHandler,
         private readonly httpService: HttpService,
+        private readonly socketNotification: NotificationsGateway
     ) { }
 
     async getAllUnreadNotifications() {
@@ -71,6 +73,8 @@ export class NotificationService {
                 description
             }
         });
+
+        this.socketNotification.emitToAllRoles('toast', notification);
     }
 
     async sendNotificationToUser(token: string, title: string, body: string, optionals?: any) {

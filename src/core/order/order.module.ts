@@ -7,9 +7,10 @@ import { ErrorExceptionFilters } from 'src/service/errorResponse.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
 import { NotificationService } from '../notification/notification.service';
+import { GatewayModule } from '../gateway/gateway.module';
 
 @Module({
-  imports: [HttpModule],
+  imports: [HttpModule, GatewayModule],
   controllers: [OrderController],
   providers: [
     OrderService, 

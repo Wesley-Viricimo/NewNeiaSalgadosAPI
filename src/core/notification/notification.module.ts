@@ -5,9 +5,10 @@ import { ErrorExceptionFilters } from 'src/service/errorResponse.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { HttpModule } from '@nestjs/axios';
+import { GatewayModule } from '../gateway/gateway.module';
 
 @Module({
-  imports: [HttpModule],
+  imports: [HttpModule, GatewayModule],
   controllers: [NotificationController],
   providers: [
     NotificationService,

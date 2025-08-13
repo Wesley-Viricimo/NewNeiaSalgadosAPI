@@ -12,30 +12,30 @@ import { PrismaService } from './shared/prisma/prisma.service';
 import { ExceptionHandler } from './shared/utils/exceptions/exceptions-handler';
 import { CategoryModule } from './core/category/category.module';
 import { AdditionalModule } from './core/additional/additional.module';
-import { NotificationsGateway } from './core/gateway/notifications.gateway';
 import { NotificationModule } from './core/notification/notification.module';
+import { GatewayModule } from './core/gateway/gateway.module';
 
 @Module({
   imports: [
-    AuthModule, 
+    AuthModule,
     ProductModule,
     UserModule,
     AddressModule,
     OrderModule,
     CategoryModule,
     AdditionalModule,
-    NotificationModule
+    NotificationModule,
+    GatewayModule
   ],
   controllers: [AppController],
   providers: [
     AppService,
     PrismaService,
     ExceptionHandler,
-    NotificationsGateway,
     {
       provide: APP_GUARD,
       useClass: AuthGuard
     }
   ],
 })
-export class AppModule {}
+export class AppModule { }
