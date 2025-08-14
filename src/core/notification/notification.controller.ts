@@ -8,7 +8,7 @@ export class NotificationController {
   constructor(private readonly notificationService: NotificationService) { }
 
   @Roles('ADMIN', 'DEV', 'COMERCIAL')
-  @Get()
+  @Get('unread')
   getAllUnreadNotifications() {
     return this.notificationService.getAllUnreadNotifications();
   }

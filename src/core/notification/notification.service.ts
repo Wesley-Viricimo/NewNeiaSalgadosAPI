@@ -18,12 +18,7 @@ export class NotificationService {
 
     async getAllUnreadNotifications() {
         return await this.prismaService.notification.findMany({
-            where: { read: false },
-            select: {
-                idNotification: true,
-                description: true,
-                read: true
-            }
+            where: { read: false }
         })
             .then(response => {
                 const message = { severity: 'success', summary: 'Sucesso', detail: 'Notificações listadas com sucesso.' };
