@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Req } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { FastifyRequest } from 'fastify';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
@@ -14,10 +14,10 @@ export class NotificationController {
   }
 
   @Roles('ADMIN', 'DEV', 'COMERCIAL')
-  @Post('markAsRead/:idNotification')
+  @Post('markAsRead')
   @HttpCode(HttpStatus.CREATED)
   markNotificationAsRead(
-    @Param('idNotification') idNotification: string,
+    @Body('idNotification') idNotification: string,
     @Req() request: FastifyRequest
   ) {
     return this.notificationService.markNotificationAsRead(+idNotification, request['userId']);
