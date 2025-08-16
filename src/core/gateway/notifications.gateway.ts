@@ -1,7 +1,6 @@
 import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, MessageBody } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io'; // Import Socket for type definition
+import { Server, Socket } from 'socket.io';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { NotificationGatewayDto } from './dto/notifications.gateway.dto';
 import { Notification } from '@prisma/client';
 
 @WebSocketGateway({

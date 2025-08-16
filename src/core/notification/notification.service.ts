@@ -4,6 +4,7 @@ import { lastValueFrom } from 'rxjs';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { NotificationsGateway } from '../gateway/notifications.gateway';
+import { NotificationDto } from './dto/notification.dto';
 
 @Injectable()
 export class NotificationService {
@@ -61,15 +62,15 @@ export class NotificationService {
         }
     }
 
-    async sendNotificationToAdmin(title: string, description: string) {
+    async sendNotificationToAdmin(dto: NotificationDto) {
         const notification = await this.prismaService.notification.create({
             data: {
-                title,
-                description
+                title: dto.title,
+                description: dto.description
             }
         });
 
-        this.socketNotification.emitToAllRoles('toast', notification);
+        this.socketNotification.emitToAllRoles(dto.notificationType, notification);
     }
 
     async sendNotificationToUser(token: string, title: string, body: string, optionals?: any) {

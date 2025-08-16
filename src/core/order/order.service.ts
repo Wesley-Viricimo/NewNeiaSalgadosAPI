@@ -13,6 +13,7 @@ import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
 import { AdditionalItemDto, OrderDto, OrderFindAllQuery, OrderUpdateStatusParams } from './dto/order-dto';
 import { NotificationService } from '../notification/notification.service';
+import { NotificationDto } from '../notification/dto/notification.dto';
 
 @Injectable()
 export class OrderService {
@@ -105,8 +106,14 @@ export class OrderService {
       const user = await this.prismaService.user.findUnique({
         where: { idUser: userId }
       })
-      
-      await this.notificationService.sendNotificationToAdmin(`Novo pedido de ${user.surname}`, `O usuário ${user.surname} acabou de realizar um pedido!`);
+
+      const notification: NotificationDto = {
+        title: `${user.surname} realizou um novo pedido`,
+        description: `O cliente ${user.surname} realizou um novo pedido!`,
+        notificationType: 'success'
+      };
+
+      await this.notificationService.sendNotificationToAdmin(notification);
 
       const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido realizado com sucesso!' };
       return {
@@ -437,6 +444,16 @@ export class OrderService {
       }
     })
       .then(async (order) => {
+
+        const notificationType = orderStatus == 'ENTREGUE'? 'success' : orderStatus == 'CANCELADO' ? 'error' : 'info';
+
+        const notification = {
+          title: `Status do pedido atualizado`,
+          description: `Status do pedido do cliente ${order.user.surname} foi atualizado para '${orderStatus}'`,
+          notificationType
+        } as NotificationDto;
+
+        await this.notificationService.sendNotificationToAdmin(notification);
 
         await this.auditingService.saveAudit({
           idUser: userId,
