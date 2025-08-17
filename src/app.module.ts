@@ -14,9 +14,12 @@ import { CategoryModule } from './core/category/category.module';
 import { AdditionalModule } from './core/additional/additional.module';
 import { NotificationModule } from './core/notification/notification.module';
 import { GatewayModule } from './core/gateway/gateway.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SchedulesModule } from './schedules/schedules.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     AuthModule,
     ProductModule,
     UserModule,
@@ -25,7 +28,8 @@ import { GatewayModule } from './core/gateway/gateway.module';
     CategoryModule,
     AdditionalModule,
     NotificationModule,
-    GatewayModule
+    GatewayModule,
+    SchedulesModule
   ],
   controllers: [AppController],
   providers: [
