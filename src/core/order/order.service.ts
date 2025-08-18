@@ -1,4 +1,4 @@
-import { Injectable, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpStatus, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { PAYMENT_METHOD, TYPE_OF_DELIVERY, ORDER_STATUS_DELIVERY, ORDER_STATUS_WITHDRAWAL, ORDER_PLACED } from './constants/order.constants';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
@@ -445,7 +445,7 @@ export class OrderService {
     })
       .then(async (order) => {
 
-        const notificationType = orderStatus == 'ENTREGUE'? 'success' : orderStatus == 'CANCELADO' ? 'error' : 'info';
+        const notificationType = orderStatus == 'ENTREGUE' ? 'success' : orderStatus == 'CANCELADO' ? 'error' : 'info';
 
         const notification = {
           title: `Status do pedido atualizado`,
@@ -496,5 +496,20 @@ export class OrderService {
       .catch(() => {
         this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar status do pedido!');
       });
+  }
+
+  async getPendingOrders() {
+    const twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000);
+
+    return await this.prismaService.order.findMany({
+      where: {
+        orderStatus: {
+          notIn: ['ENTREGUE', 'CANCELADO'],
+        },
+        updatedAt: {
+          lt: twentyMinutesAgo,
+        },
+      },
+    })
   }
 }
