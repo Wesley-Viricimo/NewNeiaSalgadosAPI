@@ -454,7 +454,7 @@ export class OrderService {
 
         const notification = {
           title: `Status do pedido atualizado`,
-          description: `Status do pedido do cliente ${order.user.surname} foi atualizado para '${orderStatus}'`,
+          description: `Status do pedido #${order.idOrder} do cliente ${order.user.surname} foi atualizado para '${orderStatus}'`,
           notificationType
         } as NotificationDto;
 
