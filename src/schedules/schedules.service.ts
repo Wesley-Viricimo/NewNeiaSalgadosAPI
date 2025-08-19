@@ -10,9 +10,9 @@ export class SchedulesService {
         private readonly notificationTask: NotificationTask
     ) {}
 
-    @Cron(CronExpression.EVERY_MINUTE)
+    @Cron(CronExpression.EVERY_30_MINUTES)
     async initCronNotifyOrdersPending() {
-        this.logger.log('Iniciou cron para notificar pedidos pendentes');
+        this.logger.debug('Iniciou cron para notificar pedidos pendentes');
         await this.notificationTask.notifyOrdersPending();
     }
 }

@@ -60,7 +60,12 @@ export class OrderService {
       };
     }));
 
+    const user = await this.prismaService.user.findUnique({
+      where: { idUser: userId }
+    });
+
     const orderData = {
+      userSurname: user.surname,
       typeOfDelivery: TYPE_OF_DELIVERY[orderDto.typeOfDelivery],
       orderStatus: orderDto.typeOfDelivery === 0 ? ORDER_STATUS_DELIVERY[0] : ORDER_STATUS_WITHDRAWAL[0],
       paymentMethod: PAYMENT_METHOD[orderDto.paymentMethod],

@@ -16,17 +16,17 @@ export class NotificationTask {
         await this.orderService.getPendingOrders()
             .then(async (orders) => {
                 if (orders.length > 0) {
-                    this.logger.log(`${orders.length} pedidos pendentes encontrados, notificações serão enviadas aos administradores!`);
+                    this.logger.debug(`${orders.length} pedidos pendentes encontrados, notificações serão enviadas aos administradores!`);
 
                     for (const order of orders) {
                         const notification: NotificationDto = {
                             title: `Pedido sem retorno`,
-                            description: `Pedido do cliente ${order.idUser} está sem retorno`,
-                            notificationType: 'error'
+                            description: `Pedido #${order.idOrder} do cliente ${order.userSurname} está sem retorno`,
+                            notificationType: 'warn'
                         };
 
                         await this.notificationService.sendNotificationToAdmin(notification);
-                        await new Promise(resolve => setTimeout(resolve, 5000));
+                        await new Promise(resolve => setTimeout(resolve, 10000));
                     }
                 }
             })

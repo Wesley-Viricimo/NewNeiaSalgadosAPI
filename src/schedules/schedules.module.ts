@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
 import { NotificationTask } from './tasks/notification.task';
-import { ScheduleModule } from '@nestjs/schedule';
 import { OrderService } from 'src/core/order/order.service';
 import { NotificationService } from 'src/core/notification/notification.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
@@ -12,7 +11,6 @@ import { GatewayModule } from 'src/core/gateway/gateway.module';
 
 @Module({
   imports: [ 
-    ScheduleModule.forRoot(),
     HttpModule, 
     GatewayModule
   ],
