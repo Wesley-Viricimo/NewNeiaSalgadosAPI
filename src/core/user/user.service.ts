@@ -191,11 +191,7 @@ export class UserService {
 
   async findById(id: number) {
 
-    const user = await this.prismaService.user.findUnique({
-      where: { idUser: id }
-    });
-
-    if (!user) this.exceptionHandler.errorNotFoundResponse('Este usuário não está cadastrado no sistema!');
+    const user = await this.getUserById(id);
 
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuário listado com sucesso!' };
 
@@ -279,16 +275,12 @@ export class UserService {
     if (!ROLES[userUpdate.role]) this.exceptionHandler.errorBadRequestResponse(`Não existe a função com o id: ${userUpdate.role}`);
     if (userUpdate.userId == adminId) this.exceptionHandler.errorBadRequestResponse('Um usuário não pode alterar a própria função!');
 
-    const admin = await this.prismaService.user.findUnique({
-      where: { idUser: adminId }
-    });
+    const admin = await this.getUserById(adminId);
 
     if (ROLES[userUpdate.role] == 'DEV' && ROLES[userUpdate.role] != admin.role) this.exceptionHandler.errorBadRequestResponse(`Somente usuários DEV podem alterar a função do usuário para DEV!`);
     if (admin.role == 'ADMIN' && ROLES[userUpdate.role] == 'ADMIN') this.exceptionHandler.errorBadRequestResponse('Somente usuários DEV podem alterar a função do usuário para ADMIN!');
 
-    const user = await this.prismaService.user.findUnique({
-      where: { idUser: userUpdate.userId }
-    });
+    const user = await this.getUserById(userUpdate.userId);
 
     if (!user) this.exceptionHandler.errorBadRequestResponse('Este usuário não está cadastrado no sistema!');
     if (user.isActive == false) this.exceptionHandler.errorBadRequestResponse('Não é possível alterar a função de usuários inativos!');
@@ -415,10 +407,7 @@ export class UserService {
   }
 
   async changeUserActivity(changeUserStatusDTO: ChangeUserStatusDto, idUser: number) {
-
-    const user = await this.prismaService.user.findUnique({
-      where: { idUser: changeUserStatusDTO.userId }
-    });
+    const user = await this.getUserById(changeUserStatusDTO.userId);
 
     if (user.idUser == idUser) this.exceptionHandler.errorBadRequestResponse('Não é possível alterar o próprio status de atividade!');
 
@@ -490,6 +479,20 @@ export class UserService {
         });
     } catch (error) {
       this.exceptionHandler.errorBadRequestResponse('Erro ao cadastrar token de notificação!');
+    }
+  }
+
+  async getUserById(idUser: number) {
+    try {
+      const user = await this.prismaService.user.findUnique({
+        where: { idUser }
+      });
+
+      if (!user) this.exceptionHandler.errorNotFoundResponse('Este usuário não está cadastrado no sistema!');
+
+      return user;
+    } catch (error) {
+      throw new Error('Houve um erro ao buscar usuário por id')
     }
   }
 }

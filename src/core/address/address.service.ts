@@ -8,13 +8,15 @@ import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { userSelectConfig, addressByIdSelectConfig, addressSelectConfig } from './config/address-select-config';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AddressDto, AddressQuery } from './dto/address.dto';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class AddressService {
   constructor(
     private readonly viaCepService: ViaCepService,
     private readonly prismaService: PrismaService,
-    private readonly exceptionHandler: ExceptionHandler
+    private readonly exceptionHandler: ExceptionHandler,
+    private readonly userService: UserService
 ){}
 
   async create(addressDto: AddressDto, userId: number) {
@@ -117,11 +119,7 @@ export class AddressService {
   }
 
   private async validationFieldsAddress(addressDto: AddressDto, userId: number) {
-    const user = await this.prismaService.user.findUnique({
-      where: { idUser: userId }
-    });
-
-    if (!user) this.exceptionHandler.errorNotFoundResponse(`Este ${AddressSide['user']} não está cadastrado no sistema!`);
+    await this.userService.getUserById(userId);
 
     const addressExists = await this.prismaService.address.findFirst({
       where: {
