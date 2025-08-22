@@ -11,6 +11,8 @@ import { GatewayModule } from '../gateway/gateway.module';
 import { UserService } from '../user/user.service';
 import { EmailService } from 'src/service/aws/send-email.service';
 import { AdditionalService } from '../additional/additional.service';
+import { ProductService } from '../product/product.service';
+import { S3Service } from 'src/service/aws/handle-fileS3.service';
 
 @Module({
   imports: [HttpModule, GatewayModule],
@@ -24,7 +26,9 @@ import { AdditionalService } from '../additional/additional.service';
     AuditingService,
     UserService,
     EmailService,
-    AdditionalService
+    AdditionalService,
+    ProductService,
+    S3Service
   ],
 })
 export class OrderModule { }

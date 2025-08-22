@@ -15,6 +15,7 @@ import { AdditionalItemDto, OrderDto, OrderFindAllQuery, OrderUpdateStatusParams
 import { NotificationService } from '../notification/notification.service';
 import { NotificationDto } from '../notification/dto/notification.dto';
 import { AdditionalService } from '../additional/additional.service';
+import { ProductService } from '../product/product.service';
 
 @Injectable()
 export class OrderService {
@@ -23,7 +24,8 @@ export class OrderService {
     private readonly exceptionHandler: ExceptionHandler,
     private readonly notificationService: NotificationService,
     private readonly auditingService: AuditingService,
-    private readonly additionalService: AdditionalService
+    private readonly additionalService: AdditionalService,
+    private readonly productService: ProductService
   ) { }
 
   async create(orderDto: OrderDto, userId: number) {
@@ -48,9 +50,7 @@ export class OrderService {
 
     const orderItemsData = await Promise.all(orderDto.orderItens.map(async (item) => {
 
-      const product = await this.prismaService.product.findUnique({
-        where: { idProduct: item.product.idProduct }
-      });
+      const product = await this.productService.getProductById(item.product.idProduct);
 
       return {
         quantity: item.quantity,
@@ -196,12 +196,7 @@ export class OrderService {
     let totalValue = 0;
 
     for (const item of orderItens) {
-      const product = await this.prismaService.product.findUnique({
-        where: { idProduct: item.product.idProduct }
-      });
-
-      if (!product) this.exceptionHandler.errorBadRequestResponse(`Produto id: ${item.product.idProduct} não está cadastrado no sistema!`);
-
+      const product = await this.productService.getProductById(item.product.idProduct);
       totalValue += product.price * item.quantity;
     }
 
@@ -332,9 +327,7 @@ export class OrderService {
 
     const orderItemsData = await Promise.all(orderDto.orderItens.map(async (item) => {
 
-      const product = await this.prismaService.product.findUnique({
-        where: { idProduct: item.product.idProduct }
-      });
+      const product = await this.productService.getProductById(item.product.idProduct);
 
       return {
         quantity: item.quantity,

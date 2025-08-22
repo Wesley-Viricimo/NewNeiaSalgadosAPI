@@ -115,12 +115,8 @@ export class ProductService {
   }
 
   async findById(id: number) {
+    const product = await this.getProductById(id);
 
-    const product = await this.prismaService.product.findUnique({
-      where: { idProduct: id }
-    });
-
-    if (!product) this.exceptionHandler.errorNotFoundResponse('Este produto não está cadastrado no sistema!');
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Produto listado com sucesso!' };
 
     return {
@@ -141,11 +137,7 @@ export class ProductService {
 
     await this.validateFieldsUpdateProduct(productDto, file);
 
-    const product = await this.prismaService.product.findUnique({
-      where: { idProduct: id }
-    });
-
-    if (!product) this.exceptionHandler.errorNotFoundResponse('Este produto não está cadastrado no sistema!');
+    const product = await this.getProductById(id);
 
     await this.validateExistsProduct(product, productDto);
 
@@ -218,12 +210,8 @@ export class ProductService {
   }
 
   async delete(id: number, idUser: number) {
-    const product = await this.prismaService.product.findUnique({
-      where: { idProduct: id }
-    });
-
-    if (!product) this.exceptionHandler.errorNotFoundResponse(`Este produto não está cadastrado no sistema!`);
-
+    const product = await this.getProductById(id);
+    
     if (product.urlImage)
       await this.s3Service.deleteFile(product.urlImage);
 
@@ -254,6 +242,20 @@ export class ProductService {
       });
     } catch (err) {
       this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar produtos por categoria. Erro: ${err}`);
+    }
+  }
+
+  async getProductById(productId: number) {
+    try {
+      const product = this.prismaService.product.findUnique({
+        where: { idProduct: productId }
+      });
+
+      if(!product) this.exceptionHandler.errorBadRequestResponse(`O produto id ${productId} não está cadastrado no sistema!`);
+
+      return product;
+    } catch (err) {
+      this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar produto por id. Erro: ${err}`);
     }
   }
 }

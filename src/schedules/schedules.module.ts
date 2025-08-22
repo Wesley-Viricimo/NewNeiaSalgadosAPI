@@ -11,6 +11,8 @@ import { GatewayModule } from 'src/core/gateway/gateway.module';
 import { UserService } from 'src/core/user/user.service';
 import { EmailService } from 'src/service/aws/send-email.service';
 import { AdditionalService } from 'src/core/additional/additional.service';
+import { ProductService } from 'src/core/product/product.service';
+import { S3Service } from 'src/service/aws/handle-fileS3.service';
 
 @Module({
   imports: [ 
@@ -28,7 +30,9 @@ import { AdditionalService } from 'src/core/additional/additional.service';
     AuditingService,
     UserService,
     EmailService,
-    AdditionalService
+    AdditionalService,
+    ProductService,
+    S3Service
   ],
 })
 export class SchedulesModule {}
