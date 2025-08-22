@@ -6,6 +6,9 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { HttpModule } from '@nestjs/axios';
 import { GatewayModule } from '../gateway/gateway.module';
+import { EmailService } from 'src/service/aws/send-email.service';
+import { AuditingService } from 'src/service/auditing.service';
+import { UserService } from '../user/user.service';
 
 @Module({
   imports: [HttpModule, GatewayModule],
@@ -14,7 +17,10 @@ import { GatewayModule } from '../gateway/gateway.module';
     NotificationService,
     ErrorExceptionFilters,
     PrismaService,
-    ExceptionHandler
+    ExceptionHandler,
+    UserService,
+    EmailService,
+    AuditingService
   ],
 })
-export class NotificationModule {}
+export class NotificationModule { }

@@ -8,6 +8,8 @@ import { AuditingService } from 'src/service/auditing.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
 import { GatewayModule } from 'src/core/gateway/gateway.module';
+import { UserService } from 'src/core/user/user.service';
+import { EmailService } from 'src/service/aws/send-email.service';
 
 @Module({
   imports: [ 
@@ -22,7 +24,9 @@ import { GatewayModule } from 'src/core/gateway/gateway.module';
     NotificationService,
     ExceptionHandler, 
     NotificationService, 
-    AuditingService
+    AuditingService,
+    UserService,
+    EmailService
   ],
 })
 export class SchedulesModule {}

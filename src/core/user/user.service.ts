@@ -142,19 +142,23 @@ export class UserService {
   }
 
   async findUserByEmail(email: string) {
-    const user = await this.prismaService.user.findUnique({
-      where: { email: email }
-    });
-
-    return user;
+    try {
+      return await this.prismaService.user.findUnique({
+        where: { email: email }
+      });
+    } catch (err) {
+      this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar usuário por e-mail. Erro: ${err}`)
+    }
   }
 
   async findUserByCpf(cpf: string) {
-    const user = await this.prismaService.user.findUnique({
-      where: { cpf: cpf }
-    });
-
-    return user;
+    try {
+      return await this.prismaService.user.findUnique({
+        where: { cpf: cpf }
+      });
+    } catch (err) {
+      this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar usuário por cpf. Erro: ${err}`)
+    }
   }
 
   async findAll(userQuery: UserQuery): Promise<PaginatedOutputDto<Object>> {

@@ -246,4 +246,14 @@ export class ProductService {
         this.exceptionHandler.errorBadRequestResponse('Erro ao excluir produto!');
       });
   }
+
+  async getProductsByCategory(categoryId: number) {
+    try {
+      return await this.prismaService.product.findMany({
+        where: { idCategory: categoryId }
+      });
+    } catch (err) {
+      this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar produtos por categoria. Erro: ${err}`);
+    }
+  }
 }

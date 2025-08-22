@@ -5,6 +5,7 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { NotificationsGateway } from '../gateway/notifications.gateway';
 import { NotificationDto } from './dto/notification.dto';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class NotificationService {
@@ -14,7 +15,8 @@ export class NotificationService {
         private readonly prismaService: PrismaService,
         private readonly exceptionHandler: ExceptionHandler,
         private readonly httpService: HttpService,
-        private readonly socketNotification: NotificationsGateway
+        private readonly socketNotification: NotificationsGateway,
+        private readonly userService: UserService
     ) { }
 
     async getAllUnreadNotifications() {
@@ -35,13 +37,11 @@ export class NotificationService {
         try {
             const [notification, user] = await Promise.all([
                 this.prismaService.notification.findUnique({ where: { idNotification } }),
-                this.prismaService.user.findUnique({ where: { idUser } }),
+                this.userService.getUserById(idUser)
             ]);
 
             if (!notification)
                 this.exceptionHandler.errorBadRequestResponse('Notificação não foi encontrada!');
-            if (!user)
-                this.exceptionHandler.errorBadRequestResponse('Usuário não cadastrado no sistema!');
 
             const response = await this.prismaService.notificationRead.create({
                 data: { idNotification, idUser }

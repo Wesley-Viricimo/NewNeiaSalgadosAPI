@@ -7,13 +7,15 @@ import { ActionAuditingModel } from 'src/shared/types/auditing';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { CategoryDto, CategoryQuery } from './dto/category.dto';
+import { ProductService } from '../product/product.service';
 
 @Injectable()
 export class CategoryService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly exceptionHandler: ExceptionHandler,
-    private readonly auditingService: AuditingService
+    private readonly auditingService: AuditingService,
+    private readonly productService: ProductService
   ) { }
 
   async create(categoryDto: CategoryDto, idUser: number) {
@@ -175,9 +177,7 @@ export class CategoryService {
 
     if (!category) this.exceptionHandler.errorNotFoundResponse(`Esta categoria não está cadastrada no sistema!`);
 
-    const products = await this.prismaService.product.findMany({
-      where: { idCategory: id }
-    });
+    const products = await this.productService.getProductsByCategory(id);
 
     if (products.length > 0) this.exceptionHandler.errorBadRequestResponse(`Existem produtos que pertecem a esta categoria, então não é possível excluí-la!`);
 

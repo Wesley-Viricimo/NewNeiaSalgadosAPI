@@ -8,17 +8,21 @@ import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler
 import { AuditingService } from 'src/service/auditing.service';
 import { NotificationService } from '../notification/notification.service';
 import { GatewayModule } from '../gateway/gateway.module';
+import { UserService } from '../user/user.service';
+import { EmailService } from 'src/service/aws/send-email.service';
 
 @Module({
   imports: [HttpModule, GatewayModule],
   controllers: [OrderController],
   providers: [
-    OrderService, 
+    OrderService,
     ErrorExceptionFilters,
     PrismaService,
     ExceptionHandler,
     NotificationService,
-    AuditingService
+    AuditingService,
+    UserService,
+    EmailService,
   ],
 })
-export class OrderModule {}
+export class OrderModule { }
