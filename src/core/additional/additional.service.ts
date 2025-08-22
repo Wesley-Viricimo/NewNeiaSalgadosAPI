@@ -67,11 +67,7 @@ export class AdditionalService {
 
   async update(id: number, updateAdditionalDto: AdditionalDto, idUser: number) {
 
-    const additional = await this.prismaService.additional.findUnique({
-      where: { idAdditional: id }
-    });
-
-    if (!additional) this.exceptionHandler.errorBadRequestResponse('Adicional não cadastrado no sistema!');
+    const additional = await this.getAdditionalById(id);
 
     await this.validateFieldsUpdateAdditional(additional, updateAdditionalDto);
 
@@ -162,12 +158,8 @@ export class AdditionalService {
   }
 
   async remove(id: number, idUser: number) {
-    const additional = await this.prismaService.additional.findUnique({
-      where: { idAdditional: id }
-    });
-
-    if (!additional) this.exceptionHandler.errorNotFoundResponse(`Este adicional não está cadastrado no sistema!`);
-
+    const additional = await this.getAdditionalById(id);
+    
     const ordersAdditional = await this.prismaService.orderAdditional.findMany({
       where: { idAdditional: id }
     });
@@ -198,5 +190,19 @@ export class AdditionalService {
       .catch(() => {
         this.exceptionHandler.errorBadRequestResponse('Erro ao excluir adicional!');
       })
+  }
+
+  async getAdditionalById(additionalId: number) {
+    try {
+      const additional = this.prismaService.additional.findUnique({
+        where: { idAdditional: additionalId }
+      });
+
+      if(!additional) this.exceptionHandler.errorBadRequestResponse(`O adicional id ${additionalId} não está cadastrado no sistema!`);
+
+      return additional;
+    } catch (err) {
+      this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar adicional por id. Erro: ${err}`);
+    }
   }
 }

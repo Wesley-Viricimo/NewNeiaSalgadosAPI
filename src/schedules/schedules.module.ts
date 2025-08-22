@@ -10,6 +10,7 @@ import { HttpModule } from '@nestjs/axios';
 import { GatewayModule } from 'src/core/gateway/gateway.module';
 import { UserService } from 'src/core/user/user.service';
 import { EmailService } from 'src/service/aws/send-email.service';
+import { AdditionalService } from 'src/core/additional/additional.service';
 
 @Module({
   imports: [ 
@@ -26,7 +27,8 @@ import { EmailService } from 'src/service/aws/send-email.service';
     NotificationService, 
     AuditingService,
     UserService,
-    EmailService
+    EmailService,
+    AdditionalService
   ],
 })
 export class SchedulesModule {}

@@ -14,6 +14,7 @@ import { ActionAuditingModel } from 'src/shared/types/auditing';
 import { AdditionalItemDto, OrderDto, OrderFindAllQuery, OrderUpdateStatusParams } from './dto/order-dto';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationDto } from '../notification/dto/notification.dto';
+import { AdditionalService } from '../additional/additional.service';
 
 @Injectable()
 export class OrderService {
@@ -21,7 +22,8 @@ export class OrderService {
     private readonly prismaService: PrismaService,
     private readonly exceptionHandler: ExceptionHandler,
     private readonly notificationService: NotificationService,
-    private readonly auditingService: AuditingService
+    private readonly auditingService: AuditingService,
+    private readonly additionalService: AdditionalService
   ) { }
 
   async create(orderDto: OrderDto, userId: number) {
@@ -35,9 +37,7 @@ export class OrderService {
     totalValue += additionalTotalValue;
 
     const orderAdditionalData = await Promise.all(orderDto.additionalItens.map(async (item) => {
-      const additional = await this.prismaService.additional.findUnique({
-        where: { idAdditional: item.idAdditional }
-      });
+      const additional = await this.additionalService.getAdditionalById(item.idAdditional);
 
       return {
         idAdditional: additional.idAdditional,
@@ -213,12 +213,7 @@ export class OrderService {
 
     if (additionalItens != undefined) {
       for (const item of additionalItens) {
-        const additional = await this.prismaService.additional.findUnique({
-          where: { idAdditional: item.idAdditional }
-        });
-
-        if (!additional) this.exceptionHandler.errorBadRequestResponse(`O adicional id:${item.idAdditional} não está cadastrado no sistema!`);
-
+        const additional = await this.additionalService.getAdditionalById(item.idAdditional);
         totalValue += additional.price;
       }
     }

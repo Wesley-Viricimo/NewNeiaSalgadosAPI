@@ -10,6 +10,7 @@ import { NotificationService } from '../notification/notification.service';
 import { GatewayModule } from '../gateway/gateway.module';
 import { UserService } from '../user/user.service';
 import { EmailService } from 'src/service/aws/send-email.service';
+import { AdditionalService } from '../additional/additional.service';
 
 @Module({
   imports: [HttpModule, GatewayModule],
@@ -23,6 +24,7 @@ import { EmailService } from 'src/service/aws/send-email.service';
     AuditingService,
     UserService,
     EmailService,
+    AdditionalService
   ],
 })
 export class OrderModule { }
