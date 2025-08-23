@@ -106,13 +106,7 @@ export class CategoryService {
   }
 
   async findById(id: number) {
-
-    const category = await this.prismaService.category.findUnique({
-      where: { idCategory: id }
-    });
-
-    if (!category) this.exceptionHandler.errorNotFoundResponse('Esta categoria não está cadastrada no sistema!');
-
+    const category = await this.getCategoryById(id);
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Categoria listada com sucesso!' };
 
     return {
@@ -127,12 +121,7 @@ export class CategoryService {
 
   async update(id: number, categoryDto: CategoryDto, idUser: number) {
 
-    const category = await this.prismaService.category.findUnique({
-      where: { idCategory: id }
-    });
-
-    if (!category) this.exceptionHandler.errorNotFoundResponse(`Esta categoria não está cadastrada no sistema!`);
-
+    const category = await this.getCategoryById(id);
     await this.validateExistsCategory(category, categoryDto);
 
     return await this.prismaService.category.update({
@@ -171,12 +160,7 @@ export class CategoryService {
   }
 
   async delete(id: number, idUser: number) {
-    const category = await this.prismaService.category.findUnique({
-      where: { idCategory: id }
-    });
-
-    if (!category) this.exceptionHandler.errorNotFoundResponse(`Esta categoria não está cadastrada no sistema!`);
-
+    const category = await this.getCategoryById(id);
     const products = await this.productService.getProductsByCategory(id);
 
     if (products.length > 0) this.exceptionHandler.errorBadRequestResponse(`Existem produtos que pertecem a esta categoria, então não é possível excluí-la!`);
@@ -208,5 +192,19 @@ export class CategoryService {
     });
 
     if (existsCategory && (category.idCategory !== existsCategory.idCategory)) this.exceptionHandler.errorBadRequestResponse(`Esta categoria já foi cadastrada no sistema!`);
+  }
+
+  async getCategoryById(categoryId: number) {
+    try {
+      const category = await this.prismaService.category.findUnique({
+        where: { idCategory: categoryId }
+      });
+
+      if (!category) this.exceptionHandler.errorBadRequestResponse(`A categoria id ${categoryId} não está cadastrada no sistema!`);
+
+      return category;
+    } catch (err) {
+      this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar categoria por id. Erro: ${err}`);
+    }
   }
 }
