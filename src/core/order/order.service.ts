@@ -16,6 +16,8 @@ import { NotificationService } from '../notification/notification.service';
 import { NotificationDto } from '../notification/dto/notification.dto';
 import { AdditionalService } from '../additional/additional.service';
 import { ProductService } from '../product/product.service';
+import { UserService } from '../user/user.service';
+import { AddressService } from '../address/address.service';
 
 @Injectable()
 export class OrderService {
@@ -25,7 +27,9 @@ export class OrderService {
     private readonly notificationService: NotificationService,
     private readonly auditingService: AuditingService,
     private readonly additionalService: AdditionalService,
-    private readonly productService: ProductService
+    private readonly productService: ProductService,
+    private readonly userService: UserService,
+    private readonly addressService: AddressService
   ) { }
 
   async create(orderDto: OrderDto, userId: number) {
@@ -60,9 +64,7 @@ export class OrderService {
       };
     }));
 
-    const user = await this.prismaService.user.findUnique({
-      where: { idUser: userId }
-    });
+    const user = await this.userService.getUserById(userId);
 
     const orderData = {
       userSurname: user.surname,
@@ -108,10 +110,6 @@ export class OrderService {
 
       if (userNotificationToken) await this.notificationService.sendNotificationToUser(userNotificationToken.token, ORDER_PLACED.title, ORDER_PLACED.body);
 
-      const user = await this.prismaService.user.findUnique({
-        where: { idUser: userId }
-      })
-
       const notification: NotificationDto = {
         title: `${user.surname} realizou um novo pedido`,
         description: `O cliente ${user.surname} realizou um novo pedido!`,
@@ -153,19 +151,10 @@ export class OrderService {
 
     if (orderDto.orderItens.length === 0) this.exceptionHandler.errorBadRequestResponse(`Pedido não pode ser realizado sem itens!`);
 
-    const user = await this.prismaService.user.findUnique({
-      where: { idUser: userId }
-    });
-
-    if (!user) this.exceptionHandler.errorNotFoundResponse(`Este usuário não está cadastrado no sistema!`);
+    const user = await this.userService.getUserById(userId);
 
     if (isEntrega) {
-      const address = await this.prismaService.address.findUnique({
-        where: { idAddress: orderDto.idAddress }
-      });
-
-      if (!address) this.exceptionHandler.errorNotFoundResponse(`Este endereço não está cadastrado no sistema!`);
-
+      const address = await this.addressService.getAddressById(orderDto.idAddress);
       if (address.idUser !== user.idUser) this.exceptionHandler.errorBadRequestResponse(`O endereço fornecido não pertence a este usuário!`);
     }
 
@@ -314,9 +303,7 @@ export class OrderService {
     totalValue += additionalTotalValue;
 
     const orderAdditionalData = await Promise.all(orderDto.additionalItens.map(async (item) => {
-      const additional = await this.prismaService.additional.findUnique({
-        where: { idAdditional: item.idAdditional }
-      });
+      const additional = await this.additionalService.getAdditionalById(item.idAdditional);
 
       return {
         idAdditional: additional.idAdditional,

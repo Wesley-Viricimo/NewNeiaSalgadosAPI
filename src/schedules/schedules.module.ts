@@ -13,6 +13,8 @@ import { EmailService } from 'src/service/aws/send-email.service';
 import { AdditionalService } from 'src/core/additional/additional.service';
 import { ProductService } from 'src/core/product/product.service';
 import { S3Service } from 'src/service/aws/handle-fileS3.service';
+import { AddressService } from 'src/core/address/address.service';
+import { ViaCepService } from 'src/service/viacep.service';
 
 @Module({
   imports: [ 
@@ -32,7 +34,9 @@ import { S3Service } from 'src/service/aws/handle-fileS3.service';
     EmailService,
     AdditionalService,
     ProductService,
-    S3Service
+    S3Service,
+    AddressService,
+    ViaCepService
   ],
 })
 export class SchedulesModule {}

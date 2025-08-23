@@ -134,31 +134,9 @@ export class UserService {
   private async validateFieldsCreateUser(userDto: UserDto) {
     if (userDto.cpf.length > 11) this.exceptionHandler.errorBadRequestResponse(`${UserSide['cpf']} não pode exceder 11 caracteres!`);
     if (!cpf.isValid(userDto.cpf)) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['cpf']} não é válido!`);
-    const cpfExists = await this.findUserByCpf(userDto.cpf);
-    if (cpfExists) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['cpf']} já está cadastrado no sistema!`);
 
-    const emailExists = await this.findUserByEmail(userDto.email);
-    if (emailExists) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['email']} já está cadastrado no sistema!`);
-  }
-
-  async findUserByEmail(email: string) {
-    try {
-      return await this.prismaService.user.findUnique({
-        where: { email: email }
-      });
-    } catch (err) {
-      this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar usuário por e-mail. Erro: ${err}`)
-    }
-  }
-
-  async findUserByCpf(cpf: string) {
-    try {
-      return await this.prismaService.user.findUnique({
-        where: { cpf: cpf }
-      });
-    } catch (err) {
-      this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar usuário por cpf. Erro: ${err}`)
-    }
+    await this.findUserByCpf(userDto.cpf);
+    await this.findUserByEmail(userDto.email);
   }
 
   async findAll(userQuery: UserQuery): Promise<PaginatedOutputDto<Object>> {
@@ -492,11 +470,37 @@ export class UserService {
         where: { idUser }
       });
 
-      if (!user) this.exceptionHandler.errorNotFoundResponse('Este usuário não está cadastrado no sistema!');
+      if (!user) this.exceptionHandler.errorBadRequestResponse(`O usuário id ${idUser} não está cadastrado no sistema!`);
 
       return user;
-    } catch (error) {
-      throw new Error('Houve um erro ao buscar usuário por id')
+    } catch (err) {
+      this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar usuário por id. Erro: ${err}`);
+    }
+  }
+
+  async findUserByEmail(email: string) {
+    try {
+      const user = await this.prismaService.user.findUnique({
+        where: { email: email }
+      });
+      if (user) this.exceptionHandler.errorBadRequestResponse(`O email ${email} já foi cadastrado no sistema!`);
+      return user;
+    } catch (err) {
+      this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar usuário por e-mail. Erro: ${err}`)
+    }
+  }
+
+  async findUserByCpf(cpf: string) {
+    try {
+      const user = await this.prismaService.user.findUnique({
+        where: { cpf: cpf }
+      });
+
+      if (user) this.exceptionHandler.errorBadRequestResponse(`O cpf ${cpf} já foi cadastrado no sistema!`);
+
+      return user;
+    } catch (err) {
+      this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar usuário por cpf. Erro: ${err}`)
     }
   }
 }

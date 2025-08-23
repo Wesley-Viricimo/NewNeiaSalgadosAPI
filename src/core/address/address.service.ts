@@ -162,12 +162,8 @@ export class AddressService {
 
   async update(id: number, addressDto: AddressDto, userId: number) {
 
-    const address = await this.prismaService.address.findUnique({
-      where: { idAddress: id }
-    });
-
-    if(!address) this.exceptionHandler.errorNotFoundResponse(`Este ${AddressSide['address']} não está cadastrado no sistema!`);
-
+    const address = await this.getAddressById(id);
+    
     if(address.idUser !== userId) this.exceptionHandler.errorBadRequestResponse(`Este ${AddressSide['address']} não pertence a este usuário!`);
 
     return await this.prismaService.address.update({
@@ -209,14 +205,7 @@ export class AddressService {
   }
 
   async delete(id: number, userId: number) {
-    
-    const address = await this.prismaService.address.findUnique({
-      where: { idAddress: id }
-    });
-  
-    if (!address) this.exceptionHandler.errorNotFoundResponse(`Este ${AddressSide['address']} não está cadastrado no sistema!`);
-  
-    if (address.idUser !== userId) this.exceptionHandler.errorBadRequestResponse(`Este ${AddressSide['address']} não pertence a este usuário!`);
+    await this.getAddressById(id);
   
     return await this.prismaService.address.delete({
       where: { idAddress: id }
@@ -224,6 +213,20 @@ export class AddressService {
     .catch(() => {
       this.exceptionHandler.errorBadRequestResponse('Erro ao excluir endereço!');
     });
+  }
+
+  async getAddressById(addressId: number) {
+    try {
+      const address = await this.prismaService.address.findUnique({
+        where: { idAddress: addressId }
+      });
+
+      if (!address) this.exceptionHandler.errorBadRequestResponse(`O endereço id ${addressId} não está cadastrado no sistema!`);
+
+      return address;
+    } catch (err) {
+      this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar endereço por id. Erro: ${err}`);
+    }
   }
 
 }

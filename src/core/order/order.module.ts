@@ -13,6 +13,8 @@ import { EmailService } from 'src/service/aws/send-email.service';
 import { AdditionalService } from '../additional/additional.service';
 import { ProductService } from '../product/product.service';
 import { S3Service } from 'src/service/aws/handle-fileS3.service';
+import { AddressService } from '../address/address.service';
+import { ViaCepService } from 'src/service/viacep.service';
 
 @Module({
   imports: [HttpModule, GatewayModule],
@@ -28,7 +30,9 @@ import { S3Service } from 'src/service/aws/handle-fileS3.service';
     EmailService,
     AdditionalService,
     ProductService,
-    S3Service
+    S3Service,
+    AddressService,
+    ViaCepService
   ],
 })
 export class OrderModule { }
