@@ -136,7 +136,9 @@ export class UserService {
     if (!cpf.isValid(userDto.cpf)) this.exceptionHandler.errorBadRequestResponse(`Este ${UserSide['cpf']} não é válido!`);
 
     await this.findUserByCpf(userDto.cpf);
-    await this.findUserByEmail(userDto.email);
+    const emailExists = await this.findUserByEmail(userDto.email);
+
+    if (emailExists) this.exceptionHandler.errorBadRequestResponse(`O email ${emailExists.email} já foi cadastrado no sistema!`);
   }
 
   async findAll(userQuery: UserQuery): Promise<PaginatedOutputDto<Object>> {
@@ -483,9 +485,10 @@ export class UserService {
       const user = await this.prismaService.user.findUnique({
         where: { email: email }
       });
-      if (user) this.exceptionHandler.errorBadRequestResponse(`O email ${email} já foi cadastrado no sistema!`);
+
       return user;
     } catch (err) {
+      console.log('err', err)
       this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar usuário por e-mail. Erro: ${err}`)
     }
   }
