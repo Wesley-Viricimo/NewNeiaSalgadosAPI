@@ -493,38 +493,61 @@ export class OrderService {
     })
   }
 
-  async getOrdersTotalizers() {
+  async getOrdersTotalizers(period: number) {
     try {
+      // --- Define o intervalo de datas ---
+      const dateFrom = new Date();
+      dateFrom.setDate(dateFrom.getDate() - period);
+
       // --- Totais de pedidos em quantidade ---
       const ordersPending = await this.prismaService.order.findMany({
-        where: { NOT: { orderStatus: { in: ['ENTREGUE', 'CANCELADO'] } } },
+        where: {
+          createdAt: { gte: dateFrom },
+          NOT: { orderStatus: { in: ['ENTREGUE', 'CANCELADO'] } }
+        },
         select: { idOrder: true, total: true, paymentMethod: true }
       });
 
       const ordersFinish = await this.prismaService.order.findMany({
-        where: { orderStatus: 'ENTREGUE' },
+        where: {
+          createdAt: { gte: dateFrom },
+          orderStatus: 'ENTREGUE'
+        },
         select: { idOrder: true, total: true, paymentMethod: true }
       });
 
       const ordersCanceled = await this.prismaService.order.findMany({
-        where: { orderStatus: 'CANCELADO' },
+        where: {
+          createdAt: { gte: dateFrom },
+          orderStatus: 'CANCELADO'
+        },
         select: { idOrder: true, total: true, paymentMethod: true }
       });
 
-      // --- Totais de valores usando aggregate ---
       const [{ _sum: { total: totalPending } },
         { _sum: { total: totalFinish } },
         { _sum: { total: totalCanceled } }] = await Promise.all([
           this.prismaService.order.aggregate({
-            where: { NOT: { orderStatus: { in: ['ENTREGUE', 'CANCELADO'] } } },
+            where: {
+              createdAt: { gte: dateFrom },
+              NOT: { orderStatus: { in: ['ENTREGUE', 'CANCELADO'] } }
+            },
             _sum: { total: true }
           }),
+
           this.prismaService.order.aggregate({
-            where: { orderStatus: 'ENTREGUE' },
+            where: {
+              createdAt: { gte: dateFrom },
+              orderStatus: 'ENTREGUE'
+            },
             _sum: { total: true }
           }),
+
           this.prismaService.order.aggregate({
-            where: { orderStatus: 'CANCELADO' },
+            where: {
+              createdAt: { gte: dateFrom },
+              orderStatus: 'CANCELADO'
+            },
             _sum: { total: true }
           })
         ]);

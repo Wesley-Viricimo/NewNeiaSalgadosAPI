@@ -42,3 +42,9 @@ export const OrderUpdateStatusParamsSchema = z.object({
 });
 
 export type OrderUpdateStatusParams = z.infer<typeof OrderUpdateStatusParamsSchema>;
+
+export const OrderTotalizersQuerySchema = z.object({
+    period: zStringToNumber().default(30)
+});
+
+export type OrderTotalizersQuery = z.infer<typeof OrderTotalizersQuerySchema>;

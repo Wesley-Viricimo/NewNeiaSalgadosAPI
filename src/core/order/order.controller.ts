@@ -5,12 +5,12 @@ import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { Order } from './entities/order.entity';
 import { FastifyRequest } from 'fastify';
-import { OrderDto, OrderDtoSchema, OrderFindAllQuery, OrderFindAllQuerySchema, OrderUpdateStatusParams, OrderUpdateStatusParamsSchema } from './dto/order-dto';
+import { OrderDto, OrderDtoSchema, OrderFindAllQuery, OrderFindAllQuerySchema, OrderTotalizersQuery, OrderTotalizersQuerySchema, OrderUpdateStatusParams, OrderUpdateStatusParamsSchema } from './dto/order-dto';
 import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
 
 @Controller('api/v1/order')
 export class OrderController {
-  constructor(private readonly orderService: OrderService) {}
+  constructor(private readonly orderService: OrderService) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -43,7 +43,7 @@ export class OrderController {
   @Patch(':id')
   @HttpCode(HttpStatus.CREATED)
   update(
-    @Param('id') id: string, 
+    @Param('id') id: string,
     @Body(new ZodValidationPipe(OrderDtoSchema)) updateOrderDto: OrderDto,
     @Req() request: FastifyRequest
   ) {
@@ -63,8 +63,10 @@ export class OrderController {
   @Roles('ADMIN', 'DEV')
   @Get('totalizers')
   @HttpCode(HttpStatus.OK)
-  async getTotalizers() {
-    return await this.orderService.getOrdersTotalizers();
+  async getTotalizers(
+    @Query(new ZodValidationPipe(OrderTotalizersQuerySchema)) totalizersQuery: OrderTotalizersQuery
+  ) {
+    return await this.orderService.getOrdersTotalizers(totalizersQuery.period);
   }
-  
+
 }
