@@ -59,5 +59,12 @@ export class OrderController {
   ) {
     return this.orderService.validateUpdateOrderStatus(orderUpdateStatus, request['userId']);
   }
+
+  @Roles('ADMIN', 'DEV')
+  @Get('totalizers')
+  @HttpCode(HttpStatus.OK)
+  async getTotalizers() {
+    return await this.orderService.getOrdersTotalizers();
+  }
   
 }

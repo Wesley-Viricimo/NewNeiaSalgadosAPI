@@ -492,4 +492,87 @@ export class OrderService {
       },
     })
   }
+
+  async getOrdersTotalizers() {
+    try {
+      // --- Totais de pedidos em quantidade ---
+      const ordersPending = await this.prismaService.order.findMany({
+        where: { NOT: { orderStatus: { in: ['ENTREGUE', 'CANCELADO'] } } },
+        select: { idOrder: true, total: true, paymentMethod: true }
+      });
+
+      const ordersFinish = await this.prismaService.order.findMany({
+        where: { orderStatus: 'ENTREGUE' },
+        select: { idOrder: true, total: true, paymentMethod: true }
+      });
+
+      const ordersCanceled = await this.prismaService.order.findMany({
+        where: { orderStatus: 'CANCELADO' },
+        select: { idOrder: true, total: true, paymentMethod: true }
+      });
+
+      // --- Totais de valores usando aggregate ---
+      const [{ _sum: { total: totalPending } },
+        { _sum: { total: totalFinish } },
+        { _sum: { total: totalCanceled } }] = await Promise.all([
+          this.prismaService.order.aggregate({
+            where: { NOT: { orderStatus: { in: ['ENTREGUE', 'CANCELADO'] } } },
+            _sum: { total: true }
+          }),
+          this.prismaService.order.aggregate({
+            where: { orderStatus: 'ENTREGUE' },
+            _sum: { total: true }
+          }),
+          this.prismaService.order.aggregate({
+            where: { orderStatus: 'CANCELADO' },
+            _sum: { total: true }
+          })
+        ]);
+
+      const ordersFinishAndPending = [...ordersFinish, ...ordersPending];
+      const moneyOrders = ordersFinishAndPending.filter(order => order.paymentMethod === 'DINHEIRO');
+      const pixOrders = ordersFinishAndPending.filter(order => order.paymentMethod === 'PIX');
+      const creditCardOrders = ordersFinishAndPending.filter(order => order.paymentMethod === 'CARTÃO DE CRÉDITO');
+
+      const allOrderItems = await this.prismaService.orderItem.findMany({
+        where: { idOrder: { in: ordersFinishAndPending.map(order => order.idOrder) } }
+      });
+
+      const productCountMap: Record<string, number> = {};
+      allOrderItems.forEach(item => {
+        productCountMap[item.description] = (productCountMap[item.description] || 0) + item.quantity;
+      });
+
+      const topProducts = Object.entries(productCountMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([description, quantity]) => ({ description, quantity }));
+
+      return {
+        data: {
+          totalInQuantity: {
+            pending: ordersPending.length,
+            finish: ordersFinish.length,
+            canceled: ordersCanceled.length,
+          },
+          totalInValue: {
+            pending: totalPending ?? 0,
+            finish: totalFinish ?? 0,
+            canceled: totalCanceled ?? 0
+          },
+          totalPaymentMethods: {
+            money: moneyOrders.length,
+            pix: pixOrders.length,
+            creditCard: creditCardOrders.length
+          },
+          topProducts
+        },
+        message: { severity: 'success', summary: 'Sucesso', detail: 'Totalizadores listados com sucesso!' },
+        statusCode: HttpStatus.OK,
+      };
+
+    } catch (err) {
+      this.exceptionHandler.errorBadRequestResponse(`Houve um erro desconhecido ao buscar totalizadores. Erro ${err}`);
+    }
+  }
 }
