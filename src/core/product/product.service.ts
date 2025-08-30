@@ -211,7 +211,7 @@ export class ProductService {
 
   async delete(id: number, idUser: number) {
     const product = await this.getProductById(id);
-    
+
     if (product.urlImage)
       await this.s3Service.deleteFile(product.urlImage);
 
@@ -247,15 +247,16 @@ export class ProductService {
 
   async getProductById(productId: number) {
     try {
-      const product = this.prismaService.product.findUnique({
+      const product = await this.prismaService.product.findUnique({
         where: { idProduct: productId }
       });
 
-      if(!product) this.exceptionHandler.errorBadRequestResponse(`O produto id ${productId} não está cadastrado no sistema!`);
+      if (!product) throw new Error(`O produto id ${productId} não está cadastrado no sistema!`);
 
       return product;
     } catch (err) {
-      this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar produto por id. Erro: ${err}`);
+      if (err instanceof Error) this.exceptionHandler.errorBadRequestResponse(err.message);
+      this.exceptionHandler.errorBadRequestResponse('Erro inesperado ao buscar produto.');
     }
   }
 }
