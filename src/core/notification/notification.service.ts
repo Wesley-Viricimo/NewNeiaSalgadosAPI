@@ -35,13 +35,9 @@ export class NotificationService {
 
     async markNotificationAsRead(idNotification: number, idUser: number) {
         try {
-            const [notification, user] = await Promise.all([
-                this.prismaService.notification.findUnique({ where: { idNotification } }),
-                this.userService.getUserById(idUser)
-            ]);
+            const notification = await this.prismaService.notification.findUnique({ where: { idNotification } });
 
-            if (!notification)
-                this.exceptionHandler.errorBadRequestResponse('Notificação não foi encontrada!');
+            if (!notification) this.exceptionHandler.errorBadRequestResponse('Notificação não foi encontrada!');
 
             const response = await this.prismaService.notificationRead.create({
                 data: { idNotification, idUser }
@@ -66,7 +62,8 @@ export class NotificationService {
         const notification = await this.prismaService.notification.create({
             data: {
                 title: dto.title,
-                description: dto.description
+                description: dto.description,
+                type: dto.notificationType
             }
         });
 

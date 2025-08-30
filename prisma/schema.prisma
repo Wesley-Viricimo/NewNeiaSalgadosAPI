@@ -173,6 +173,7 @@ model Notification {
   idNotification        Int                 @id @default(autoincrement())  
   title                 String 
   description           String
+  type                  String
   read                  Boolean             @default(false)
   readBy                NotificationRead[]
   createdAt             DateTime            @default(now())
