@@ -200,10 +200,11 @@ export class CategoryService {
         where: { idCategory: categoryId }
       });
 
-      if (!category) this.exceptionHandler.errorBadRequestResponse(`A categoria id ${categoryId} não está cadastrada no sistema!`);
+      if (!category) throw new Error(`A categoria id ${categoryId} não está cadastrada no sistema!`);
 
       return category;
     } catch (err) {
+      if (err instanceof Error) this.exceptionHandler.errorBadRequestResponse(err.message);
       this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar categoria por id. Erro: ${err}`);
     }
   }

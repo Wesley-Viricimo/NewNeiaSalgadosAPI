@@ -198,10 +198,11 @@ export class AdditionalService {
         where: { idAdditional: additionalId }
       });
 
-      if(!additional) this.exceptionHandler.errorBadRequestResponse(`O adicional id ${additionalId} não está cadastrado no sistema!`);
+      if(!additional) throw new Error(`O adicional id ${additionalId} não está cadastrado no sistema!`);
 
       return additional;
     } catch (err) {
+      if (err instanceof Error) this.exceptionHandler.errorBadRequestResponse(err.message);
       this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar adicional por id. Erro: ${err}`);
     }
   }

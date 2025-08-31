@@ -499,10 +499,11 @@ export class UserService {
         where: { cpf: cpf }
       });
 
-      if (user) this.exceptionHandler.errorBadRequestResponse(`O cpf ${cpf} já foi cadastrado no sistema!`);
+      if (user) throw new Error(`O cpf ${cpf} já foi cadastrado no sistema!`);
 
       return user;
     } catch (err) {
+      if (err instanceof Error) this.exceptionHandler.errorBadRequestResponse(err.message);
       this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar usuário por cpf. Erro: ${err}`)
     }
   }

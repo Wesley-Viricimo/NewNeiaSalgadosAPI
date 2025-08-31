@@ -17,12 +17,12 @@ export class AddressService {
     private readonly prismaService: PrismaService,
     private readonly exceptionHandler: ExceptionHandler,
     private readonly userService: UserService
-){}
+  ) { }
 
   async create(addressDto: AddressDto, userId: number) {
 
     await this.validationFieldsAddress(addressDto, userId);
-    
+
     return await this.prismaService.address.create({
       data: {
         cep: addressDto.cep,
@@ -42,27 +42,27 @@ export class AddressService {
         user: userSelectConfig
       }
     })
-    .then(address => {
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço cadastrado com sucesso!' };
-      return {
-        data: {
-          idAddress: address.idAddress,
-          cep: address.cep,
-          state: address.state,
-          city: address.city,
-          district: address.district,
-          road: address.road,
-          number: address.number,
-          complement: address.complement,
-          user: address.user
-        },
-        message,
-        statusCode: HttpStatus.CREATED
-      }
-    })
-    .catch(() => {
-      this.exceptionHandler.errorBadRequestResponse('Erro ao cadastrar endereço!');
-    });
+      .then(address => {
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço cadastrado com sucesso!' };
+        return {
+          data: {
+            idAddress: address.idAddress,
+            cep: address.cep,
+            state: address.state,
+            city: address.city,
+            district: address.district,
+            road: address.road,
+            number: address.number,
+            complement: address.complement,
+            user: address.user
+          },
+          message,
+          statusCode: HttpStatus.CREATED
+        }
+      })
+      .catch(() => {
+        this.exceptionHandler.errorBadRequestResponse('Erro ao cadastrar endereço!');
+      });
   }
 
   async findById(addressId: number, userId: number) {
@@ -74,9 +74,9 @@ export class AddressService {
       select: selectedFields
     });
 
-    if(!address) this.exceptionHandler.errorNotFoundResponse(`Este ${AddressSide['address']} não está cadastrado no sistema!`);
+    if (!address) this.exceptionHandler.errorNotFoundResponse(`Este ${AddressSide['address']} não está cadastrado no sistema!`);
 
-    if(address.idUser !== userId) this.exceptionHandler.errorForbiddenResponse(`Este ${AddressSide['address']} não pertence a este usuário!`);
+    if (address.idUser !== userId) this.exceptionHandler.errorForbiddenResponse(`Este ${AddressSide['address']} não pertence a este usuário!`);
 
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço listado com sucesso!' };
 
@@ -115,7 +115,7 @@ export class AddressService {
       }
     } catch (error) {
       this.exceptionHandler.errorNotFoundResponse('CEP informado está incorreto!');
-    } 
+    }
   }
 
   private async validationFieldsAddress(addressDto: AddressDto, userId: number) {
@@ -132,39 +132,39 @@ export class AddressService {
       }
     });
 
-    if(addressExists) this.exceptionHandler.errorBadRequestResponse(`Este ${AddressSide['address']} endereço já foi cadastrado no sistema!`);
+    if (addressExists) this.exceptionHandler.errorBadRequestResponse(`Este ${AddressSide['address']} endereço já foi cadastrado no sistema!`);
   }
 
-  async findAddressesByUserId(userId: number, addressQuery: AddressQuery): Promise<PaginatedOutputDto<Object>>{
-    
+  async findAddressesByUserId(userId: number, addressQuery: AddressQuery): Promise<PaginatedOutputDto<Object>> {
+
     const paginate: PaginatorTypes.PaginateFunction = paginator({ page: addressQuery.page, perPage: addressQuery.perPage });
 
     const selectedFields = addressSelectConfig;
 
     return await paginate<Address, Prisma.AddressFindManyArgs>(
       this.prismaService.address,
-      { 
-        where: { idUser: userId }, 
+      {
+        where: { idUser: userId },
         select: selectedFields
       },
       { page: addressQuery.page, perPage: addressQuery.perPage }
     )
-    .then(response => {
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereços listados com sucesso.' };
+      .then(response => {
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereços listados com sucesso.' };
         return {
           data: response.data,
           meta: response.meta,
           message,
           statusCode: HttpStatus.OK
         }
-    });
+      });
   }
 
   async update(id: number, addressDto: AddressDto, userId: number) {
 
     const address = await this.getAddressById(id);
-    
-    if(address.idUser !== userId) this.exceptionHandler.errorBadRequestResponse(`Este ${AddressSide['address']} não pertence a este usuário!`);
+
+    if (address.idUser !== userId) this.exceptionHandler.errorBadRequestResponse(`Este ${AddressSide['address']} não pertence a este usuário!`);
 
     return await this.prismaService.address.update({
       where: { idAddress: id },
@@ -181,38 +181,38 @@ export class AddressService {
         user: userSelectConfig
       }
     })
-    .then(address => {
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço atualizado com sucesso!' };
-      return {
-        data: {
-          idAddress: address.idAddress,
-          user: address.user,
-          cep: address.cep,
-          state: address.state,
-          city: address.city,
-          district: address.district,
-          road: address.road,
-          number: address.number,
-          complement: address.complement
-        },
-        message,
-        statusCode: HttpStatus.CREATED
-      }
-    })
-    .catch(() => {
-      this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar endereço!');
-    });
+      .then(address => {
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço atualizado com sucesso!' };
+        return {
+          data: {
+            idAddress: address.idAddress,
+            user: address.user,
+            cep: address.cep,
+            state: address.state,
+            city: address.city,
+            district: address.district,
+            road: address.road,
+            number: address.number,
+            complement: address.complement
+          },
+          message,
+          statusCode: HttpStatus.CREATED
+        }
+      })
+      .catch(() => {
+        this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar endereço!');
+      });
   }
 
   async delete(id: number, userId: number) {
     await this.getAddressById(id);
-  
+
     return await this.prismaService.address.delete({
       where: { idAddress: id }
     })
-    .catch(() => {
-      this.exceptionHandler.errorBadRequestResponse('Erro ao excluir endereço!');
-    });
+      .catch(() => {
+        this.exceptionHandler.errorBadRequestResponse('Erro ao excluir endereço!');
+      });
   }
 
   async getAddressById(addressId: number) {
@@ -221,10 +221,11 @@ export class AddressService {
         where: { idAddress: addressId }
       });
 
-      if (!address) this.exceptionHandler.errorBadRequestResponse(`O endereço id ${addressId} não está cadastrado no sistema!`);
+      if (!address) throw new Error(`O endereço id ${addressId} não está cadastrado no sistema!`);
 
       return address;
     } catch (err) {
+      if (err instanceof Error) this.exceptionHandler.errorBadRequestResponse(err.message);
       this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar endereço por id. Erro: ${err}`);
     }
   }
