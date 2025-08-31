@@ -1,6 +1,6 @@
 import { Injectable, HttpStatus, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { PAYMENT_METHOD, TYPE_OF_DELIVERY, ORDER_STATUS_DELIVERY, ORDER_STATUS_WITHDRAWAL, ORDER_PLACED } from './constants/order.constants';
+import { PAYMENT_METHOD, TYPE_OF_DELIVERY, ORDER_STATUS_DELIVERY, ORDER_STATUS_WITHDRAWAL, ORDER_PLACED, ORDER_STATUS } from './constants/order.constants';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Order, Prisma } from '@prisma/client';
 import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
@@ -165,9 +165,9 @@ export class OrderService {
 
       if (order?.idUser !== userId) this.exceptionHandler.errorForbiddenResponse(`Este pedido não pertence a este usuário!`);
 
-      if (order.orderStatus == 'ENTREGUE' || order.orderStatus == 'CANCELADO') this.exceptionHandler.errorBadRequestResponse(`Pedidos entregues ou cancelados não podem ser atualizados!`);
+      if (order.orderStatus == ORDER_STATUS.ENTREGUE || order.orderStatus == ORDER_STATUS.CANCELADO) this.exceptionHandler.errorBadRequestResponse(`Pedidos entregues ou cancelados não podem ser atualizados!`);
 
-      if (order.orderStatus == 'PREPARANDO') {
+      if (order.orderStatus == ORDER_STATUS.PREPARANDO) {
         const tenMinutesAgo = subMinutes(new Date(), 10);
 
         if (isAfter(tenMinutesAgo, order.orderStatusUpdatedAt)) this.exceptionHandler.errorBadRequestResponse(`Pedidos pendentes só podem ser atualizados até 10 minutos após a última atualização!`);
@@ -376,15 +376,15 @@ export class OrderService {
     });
 
     if (!order) this.exceptionHandler.errorNotFoundResponse(`Este pedido não foi encontrado!`);
-    if (order.orderStatus == 'ENTREGUE') this.exceptionHandler.errorBadRequestResponse(`Pedidos entregues não podem ser alterados!`);
-    if (order.orderStatus == 'CANCELADO') this.exceptionHandler.errorBadRequestResponse(`Pedidos cancelados não podem ser alterados!`);
+    if (order.orderStatus == ORDER_STATUS.ENTREGUE) this.exceptionHandler.errorBadRequestResponse(`Pedidos entregues não podem ser alterados!`);
+    if (order.orderStatus == ORDER_STATUS.CANCELADO) this.exceptionHandler.errorBadRequestResponse(`Pedidos cancelados não podem ser alterados!`);
 
     let isPending: boolean;
 
     switch (order.typeOfDelivery) {
       case 'ENTREGA': {
         if (!ORDER_STATUS_DELIVERY[orderUpdateStatus.orderStatus]) this.exceptionHandler.errorBadRequestResponse(`Status do pedido ${orderUpdateStatus.orderStatus} é inválido!`);
-        if (ORDER_STATUS_DELIVERY[orderUpdateStatus.orderStatus] == 'ENTREGUE' || ORDER_STATUS_DELIVERY[orderUpdateStatus.orderStatus] == 'CANCELADO') {
+        if (ORDER_STATUS_DELIVERY[orderUpdateStatus.orderStatus] == ORDER_STATUS.ENTREGUE || ORDER_STATUS_DELIVERY[orderUpdateStatus.orderStatus] == ORDER_STATUS.CANCELADO) {
           isPending = false;
         } else {
           isPending = true;
@@ -395,7 +395,7 @@ export class OrderService {
 
       case 'RETIRA': {
         if (!ORDER_STATUS_WITHDRAWAL[orderUpdateStatus.orderStatus]) this.exceptionHandler.errorBadRequestResponse(`Status do pedido ${orderUpdateStatus.orderStatus} é inválido!`);
-        if (ORDER_STATUS_WITHDRAWAL[orderUpdateStatus.orderStatus] == 'ENTREGUE' || ORDER_STATUS_WITHDRAWAL[orderUpdateStatus.orderStatus] == 'CANCELADO') {
+        if (ORDER_STATUS_WITHDRAWAL[orderUpdateStatus.orderStatus] == ORDER_STATUS.ENTREGUE || ORDER_STATUS_WITHDRAWAL[orderUpdateStatus.orderStatus] == ORDER_STATUS.CANCELADO) {
           isPending = false;
         } else {
           isPending = true;
@@ -425,7 +425,7 @@ export class OrderService {
     })
       .then(async (order) => {
 
-        const notificationType = orderStatus == 'ENTREGUE' ? 'success' : orderStatus == 'CANCELADO' ? 'error' : 'info';
+        const notificationType = orderStatus == ORDER_STATUS.ENTREGUE ? 'success' : orderStatus == ORDER_STATUS.CANCELADO ? 'error' : 'info';
 
         const notification = {
           title: `Status do pedido atualizado`,
@@ -484,7 +484,7 @@ export class OrderService {
     return await this.prismaService.order.findMany({
       where: {
         orderStatus: {
-          notIn: ['ENTREGUE', 'CANCELADO'],
+          notIn: [ORDER_STATUS.ENTREGUE, ORDER_STATUS.CANCELADO],
         },
         updatedAt: {
           lt: twentyMinutesAgo,
@@ -503,7 +503,7 @@ export class OrderService {
       const ordersPending = await this.prismaService.order.findMany({
         where: {
           createdAt: { gte: dateFrom },
-          NOT: { orderStatus: { in: ['ENTREGUE', 'CANCELADO'] } }
+          NOT: { orderStatus: { in: [ORDER_STATUS.ENTREGUE, ORDER_STATUS.CANCELADO] } }
         },
         select: { idOrder: true, total: true, paymentMethod: true }
       });
@@ -511,7 +511,7 @@ export class OrderService {
       const ordersFinish = await this.prismaService.order.findMany({
         where: {
           createdAt: { gte: dateFrom },
-          orderStatus: 'ENTREGUE'
+          orderStatus: ORDER_STATUS.ENTREGUE
         },
         select: { idOrder: true, total: true, paymentMethod: true }
       });
@@ -519,7 +519,7 @@ export class OrderService {
       const ordersCanceled = await this.prismaService.order.findMany({
         where: {
           createdAt: { gte: dateFrom },
-          orderStatus: 'CANCELADO'
+          orderStatus: ORDER_STATUS.CANCELADO
         },
         select: { idOrder: true, total: true, paymentMethod: true }
       });
@@ -530,7 +530,7 @@ export class OrderService {
           this.prismaService.order.aggregate({
             where: {
               createdAt: { gte: dateFrom },
-              NOT: { orderStatus: { in: ['ENTREGUE', 'CANCELADO'] } }
+              NOT: { orderStatus: { in: [ORDER_STATUS.ENTREGUE, ORDER_STATUS.CANCELADO] } }
             },
             _sum: { total: true }
           }),
@@ -538,7 +538,7 @@ export class OrderService {
           this.prismaService.order.aggregate({
             where: {
               createdAt: { gte: dateFrom },
-              orderStatus: 'ENTREGUE'
+              orderStatus: ORDER_STATUS.ENTREGUE
             },
             _sum: { total: true }
           }),
@@ -546,7 +546,7 @@ export class OrderService {
           this.prismaService.order.aggregate({
             where: {
               createdAt: { gte: dateFrom },
-              orderStatus: 'CANCELADO'
+              orderStatus: ORDER_STATUS.CANCELADO
             },
             _sum: { total: true }
           })

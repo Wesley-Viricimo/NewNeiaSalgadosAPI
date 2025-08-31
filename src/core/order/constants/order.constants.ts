@@ -66,3 +66,9 @@ export const ORDER_CANCELED = {
     title: "Pedido cancelado",
     body: "Houve algum problema e seu pedido foi cancelado"
 }
+
+export enum ORDER_STATUS {
+    ENTREGUE = 'ENTREGUE',
+    CANCELADO = 'CANCELADO',
+    PREPARANDO = 'PREPARANDO'
+}
