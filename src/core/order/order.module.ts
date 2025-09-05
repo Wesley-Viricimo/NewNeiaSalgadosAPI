@@ -15,6 +15,7 @@ import { ProductService } from '../product/product.service';
 import { S3Service } from 'src/service/aws/handle-fileS3.service';
 import { AddressService } from '../address/address.service';
 import { ViaCepService } from 'src/service/viacep.service';
+import { AdditionalRepository } from '../additional/additional.repository';
 
 @Module({
   imports: [HttpModule, GatewayModule],
@@ -32,7 +33,8 @@ import { ViaCepService } from 'src/service/viacep.service';
     ProductService,
     S3Service,
     AddressService,
-    ViaCepService
+    ViaCepService,
+    AdditionalRepository
   ],
 })
 export class OrderModule { }

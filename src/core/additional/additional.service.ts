@@ -1,39 +1,26 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { Additional, Prisma } from '@prisma/client';
+import { Additional } from '@prisma/client';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
-import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { AdditionalDto, AdditionalQuery } from './dto/additional.dto';
+import { AdditionalRepository } from './additional.repository';
 
 @Injectable()
 export class AdditionalService {
 
   constructor(
-    private readonly prismaService: PrismaService,
     private readonly exceptionHandler: ExceptionHandler,
-    private readonly auditingService: AuditingService
+    private readonly auditingService: AuditingService,
+    private readonly additionalRepository: AdditionalRepository
   ) { }
 
   async create(additionalDto: AdditionalDto, idUser: number) {
-
     await this.validateFieldsCreateAdditional(additionalDto);
 
-    return await this.prismaService.additional.create({
-      select: {
-        idAdditional: true,
-        description: true,
-        price: true
-      },
-      data: {
-        description: additionalDto.description,
-        price: additionalDto.price
-      }
-    })
+    return this.additionalRepository.createAdditional(additionalDto)
       .then(async (result) => {
-
         await this.auditingService.saveAudit({
           idUser: idUser,
           action: "CADASTRO DE ADICIONAL",
@@ -58,26 +45,16 @@ export class AdditionalService {
   }
 
   async validateFieldsCreateAdditional(additionalDto: AdditionalDto) {
-    const existsAdditional = await this.prismaService.additional.findFirst({
-      where: { description: additionalDto.description }
-    });
-
+    const existsAdditional = await this.additionalRepository.getAdditionalByDescription(additionalDto.description);
     if (existsAdditional) this.exceptionHandler.errorBadRequestResponse('Adicional já cadastrado no sistema!');
   }
 
   async update(id: number, updateAdditionalDto: AdditionalDto, idUser: number) {
-
     const additional = await this.getAdditionalById(id);
 
     await this.validateFieldsUpdateAdditional(additional, updateAdditionalDto);
 
-    return this.prismaService.additional.update({
-      where: { idAdditional: id },
-      data: {
-        description: updateAdditionalDto.description,
-        price: updateAdditionalDto.price
-      }
-    })
+    return await this.additionalRepository.updateAdditional(id, updateAdditionalDto)
       .then(async (result) => {
         await this.auditingService.saveAudit({
           idUser: idUser,
@@ -103,28 +80,13 @@ export class AdditionalService {
   }
 
   async validateFieldsUpdateAdditional(additional: Additional, updateAdditionalDto: AdditionalDto) {
-    const existsAdditional = await this.prismaService.additional.findFirst({
-      where: { description: updateAdditionalDto.description }
-    })
-
+    const existsAdditional = await this.additionalRepository.getAdditionalByDescription(updateAdditionalDto.description);
     if (existsAdditional && (additional.idAdditional !== existsAdditional.idAdditional)) this.exceptionHandler.errorBadRequestResponse(`Este adicional já foi cadastrada no sistema!`);
   }
 
   async findAllAdditional(additionalQuery: AdditionalQuery): Promise<PaginatedOutputDto<Object>> {
     if (additionalQuery.page === 0 && additionalQuery.perPage === 0) {
-      const additional = await this.prismaService.additional.findMany({
-        where: {
-          description: {
-            contains: additionalQuery.description,
-            mode: 'insensitive'
-          }
-        },
-        select: {
-          idAdditional: true,
-          description: true,
-          price: true
-        }
-      });
+      const additional = await this.additionalRepository.findAllAdditionalNotPaginated(additionalQuery.description);
 
       return {
         data: additional,
@@ -132,49 +94,13 @@ export class AdditionalService {
       };
     }
 
-    const paginate: PaginatorTypes.PaginateFunction = paginator({ page: additionalQuery.page, perPage: additionalQuery.perPage });
-
-    return await paginate<Additional, Prisma.AdditionalFindManyArgs>(
-      this.prismaService.additional,
-      {
-        where: {
-          description: {
-            contains: additionalQuery.description,
-            mode: 'insensitive'
-          }
-        },
-        select: {
-          idAdditional: true,
-          description: true,
-          price: true
-        }
-      }
-    ).then(response => {
-      return {
-        data: response.data,
-        meta: response.meta
-      }
-    })
+    return await this.additionalRepository.findallAdditionalPaginated(additionalQuery);
   }
 
   async remove(id: number, idUser: number) {
     const additional = await this.getAdditionalById(id);
-    
-    const ordersAdditional = await this.prismaService.orderAdditional.findMany({
-      where: { idAdditional: id }
-    });
 
-    if (ordersAdditional.length > 0) {
-      for (const add of ordersAdditional) {
-        await this.prismaService.orderAdditional.delete({
-          where: { idProductAdditional: add.idProductAdditional }
-        })
-      }
-    }
-
-    return await this.prismaService.additional.delete({
-      where: { idAdditional: id }
-    })
+    return this.additionalRepository.deleteAdditional(id)
       .then(async (result) => {
         await this.auditingService.saveAudit({
           idUser: idUser,
@@ -194,11 +120,8 @@ export class AdditionalService {
 
   async getAdditionalById(additionalId: number) {
     try {
-      const additional = this.prismaService.additional.findUnique({
-        where: { idAdditional: additionalId }
-      });
-
-      if(!additional) throw new Error(`O adicional id ${additionalId} não está cadastrado no sistema!`);
+      const additional = await this.additionalRepository.getAdditionalById(additionalId);
+      if (!additional) throw new Error(`O adicional id ${additionalId} não está cadastrado no sistema!`);
 
       return additional;
     } catch (err) {

@@ -136,7 +136,6 @@ model Additional {
   idAdditional          Int                 @default(autoincrement()) @id
   description           String              @unique
   price                 Float
-  productAdditional     OrderAdditional[]
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 
@@ -150,7 +149,6 @@ model OrderAdditional {
   description           String
   price                 Float
   order                 Order               @relation(fields: [idOrder], references: [idOrder], onDelete: Cascade, onUpdate: Cascade)
-  additional            Additional          @relation(fields: [idAdditional], references: [idAdditional])
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 

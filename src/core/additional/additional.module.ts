@@ -5,6 +5,7 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ErrorExceptionFilters } from 'src/service/errorResponse.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
+import { AdditionalRepository } from './additional.repository';
 
 @Module({
   controllers: [AdditionalController],
@@ -13,7 +14,8 @@ import { AuditingService } from 'src/service/auditing.service';
     ErrorExceptionFilters,
     PrismaService,
     ExceptionHandler,
-    AuditingService
+    AuditingService,
+    AdditionalRepository
   ],
 })
 export class AdditionalModule {}

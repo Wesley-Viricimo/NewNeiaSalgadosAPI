@@ -488,7 +488,6 @@ export class UserService {
 
       return user;
     } catch (err) {
-      console.log('err', err)
       this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar usuário por e-mail. Erro: ${err}`)
     }
   }
