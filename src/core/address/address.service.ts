@@ -1,48 +1,28 @@
-import { Injectable, HttpStatus } from '@nestjs/common';
-import { PaginatorTypes, paginator } from '@nodeteam/nestjs-prisma-pagination';
+import { Injectable, HttpStatus, Logger } from '@nestjs/common';
 import { ViaCepService } from 'src/service/viacep.service';
-import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { AddressSide } from './entities/address.entity';
-import { Address, Prisma } from '@prisma/client';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
-import { userSelectConfig, addressByIdSelectConfig, addressSelectConfig } from './config/address-select-config';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AddressDto, AddressQuery } from './dto/address.dto';
 import { UserService } from '../user/user.service';
+import { AddressRepository } from './address.repository';
 
 @Injectable()
 export class AddressService {
+  private readonly logger = new Logger(AddressService.name);
+
   constructor(
     private readonly viaCepService: ViaCepService,
-    private readonly prismaService: PrismaService,
     private readonly exceptionHandler: ExceptionHandler,
-    private readonly userService: UserService
+    private readonly userService: UserService,
+    private readonly addressRepository: AddressRepository
   ) { }
 
   async create(addressDto: AddressDto, userId: number) {
-
     await this.validationFieldsAddress(addressDto, userId);
 
-    return await this.prismaService.address.create({
-      data: {
-        cep: addressDto.cep,
-        state: addressDto.state,
-        city: addressDto.city,
-        district: addressDto.district,
-        road: addressDto.road,
-        number: addressDto.number,
-        complement: addressDto.complement,
-        user: {
-          connect: {
-            idUser: userId
-          }
-        }
-      },
-      include: {
-        user: userSelectConfig
-      }
-    })
+    return await this.addressRepository.createAddress(addressDto, userId)
       .then(address => {
+        console.log('address', address)
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço cadastrado com sucesso!' };
         return {
           data: {
@@ -60,24 +40,17 @@ export class AddressService {
           statusCode: HttpStatus.CREATED
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        this.logger.error(`Erro ao cadastrar endereço: ${err}`);
         this.exceptionHandler.errorBadRequestResponse('Erro ao cadastrar endereço!');
       });
   }
 
   async findById(addressId: number, userId: number) {
+    const address = await this.addressRepository.findAddressById(addressId);
+    if (!address) this.exceptionHandler.errorNotFoundResponse(`Este endereço não está cadastrado no sistema!`);
 
-    const selectedFields = addressByIdSelectConfig;
-
-    const address = await this.prismaService.address.findUnique({
-      where: { idAddress: addressId },
-      select: selectedFields
-    });
-
-    if (!address) this.exceptionHandler.errorNotFoundResponse(`Este ${AddressSide['address']} não está cadastrado no sistema!`);
-
-    if (address.idUser !== userId) this.exceptionHandler.errorForbiddenResponse(`Este ${AddressSide['address']} não pertence a este usuário!`);
-
+    if (address.idUser !== userId) this.exceptionHandler.errorForbiddenResponse(`Este endereço não pertence a este usuário!`);
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço listado com sucesso!' };
 
     return {
@@ -121,34 +94,12 @@ export class AddressService {
   private async validationFieldsAddress(addressDto: AddressDto, userId: number) {
     await this.userService.getUserById(userId);
 
-    const addressExists = await this.prismaService.address.findFirst({
-      where: {
-        idUser: userId,
-        cep: addressDto.cep,
-        state: addressDto.state,
-        district: addressDto.district,
-        road: addressDto.road,
-        number: addressDto.number
-      }
-    });
-
-    if (addressExists) this.exceptionHandler.errorBadRequestResponse(`Este ${AddressSide['address']} endereço já foi cadastrado no sistema!`);
+    const addressExists = await this.addressRepository.getAddressByUser(addressDto, userId);
+    if (addressExists) this.exceptionHandler.errorBadRequestResponse(`Este endereço endereço já foi cadastrado no sistema!`);
   }
 
   async findAddressesByUserId(userId: number, addressQuery: AddressQuery): Promise<PaginatedOutputDto<Object>> {
-
-    const paginate: PaginatorTypes.PaginateFunction = paginator({ page: addressQuery.page, perPage: addressQuery.perPage });
-
-    const selectedFields = addressSelectConfig;
-
-    return await paginate<Address, Prisma.AddressFindManyArgs>(
-      this.prismaService.address,
-      {
-        where: { idUser: userId },
-        select: selectedFields
-      },
-      { page: addressQuery.page, perPage: addressQuery.perPage }
-    )
+    return await this.addressRepository.getAddressesByUserId(userId, addressQuery)
       .then(response => {
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereços listados com sucesso.' };
         return {
@@ -161,26 +112,11 @@ export class AddressService {
   }
 
   async update(id: number, addressDto: AddressDto, userId: number) {
-
     const address = await this.getAddressById(id);
 
-    if (address.idUser !== userId) this.exceptionHandler.errorBadRequestResponse(`Este ${AddressSide['address']} não pertence a este usuário!`);
+    if (address.idUser !== userId) this.exceptionHandler.errorBadRequestResponse(`Este endereço não pertence a este usuário!`);
 
-    return await this.prismaService.address.update({
-      where: { idAddress: id },
-      data: {
-        cep: addressDto.cep,
-        state: addressDto.state,
-        city: addressDto.city,
-        district: addressDto.district,
-        road: addressDto.road,
-        number: addressDto.number,
-        complement: addressDto.complement,
-      },
-      include: {
-        user: userSelectConfig
-      }
-    })
+    return await this.addressRepository.updateAddress(id, addressDto)
       .then(address => {
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço atualizado com sucesso!' };
         return {
@@ -204,12 +140,10 @@ export class AddressService {
       });
   }
 
-  async delete(id: number, userId: number) {
+  async delete(id: number) {
     await this.getAddressById(id);
 
-    return await this.prismaService.address.delete({
-      where: { idAddress: id }
-    })
+    return await this.addressRepository.deleteAddress(id)
       .catch(() => {
         this.exceptionHandler.errorBadRequestResponse('Erro ao excluir endereço!');
       });
@@ -217,9 +151,7 @@ export class AddressService {
 
   async getAddressById(addressId: number) {
     try {
-      const address = await this.prismaService.address.findUnique({
-        where: { idAddress: addressId }
-      });
+      const address = await this.addressRepository.findAddressById(addressId);
 
       if (!address) throw new Error(`O endereço id ${addressId} não está cadastrado no sistema!`);
 

@@ -16,6 +16,7 @@ import { S3Service } from 'src/service/aws/handle-fileS3.service';
 import { AddressService } from 'src/core/address/address.service';
 import { ViaCepService } from 'src/service/viacep.service';
 import { AdditionalRepository } from 'src/core/additional/additional.repository';
+import { AddressRepository } from 'src/core/address/address.repository';
 
 @Module({
   imports: [ 
@@ -38,7 +39,8 @@ import { AdditionalRepository } from 'src/core/additional/additional.repository'
     S3Service,
     AddressService,
     ViaCepService,
-    AdditionalRepository
+    AdditionalRepository,
+    AddressRepository
   ],
 })
 export class SchedulesModule {}

@@ -9,6 +9,7 @@ import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler
 import { UserService } from '../user/user.service';
 import { AuditingService } from 'src/service/auditing.service';
 import { EmailService } from 'src/service/aws/send-email.service';
+import { AddressRepository } from './address.repository';
 
 @Module({
   imports: [HttpModule],
@@ -22,7 +23,8 @@ import { EmailService } from 'src/service/aws/send-email.service';
     UserService,
     EmailService,
     ExceptionHandler,
-    AuditingService
+    AuditingService,
+    AddressRepository
   ],
 })
 export class AddressModule { }

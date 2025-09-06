@@ -51,7 +51,7 @@ export class AddressController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  delete(@Param('id') id: string, @Req() request: FastifyRequest) {
-    return this.addressService.delete(+id, request['userId']);
+  delete(@Param('id') id: number) {
+    return this.addressService.delete(+id);
   }
 }
