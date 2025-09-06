@@ -17,6 +17,7 @@ import { AddressService } from 'src/core/address/address.service';
 import { ViaCepService } from 'src/service/viacep.service';
 import { AdditionalRepository } from 'src/core/additional/additional.repository';
 import { AddressRepository } from 'src/core/address/address.repository';
+import { NotificationRepository } from 'src/core/notification/notification.repository';
 
 @Module({
   imports: [ 
@@ -40,7 +41,8 @@ import { AddressRepository } from 'src/core/address/address.repository';
     AddressService,
     ViaCepService,
     AdditionalRepository,
-    AddressRepository
+    AddressRepository,
+    NotificationRepository
   ],
 })
 export class SchedulesModule {}

@@ -8,7 +8,7 @@ import { HttpModule } from '@nestjs/axios';
 import { GatewayModule } from '../gateway/gateway.module';
 import { EmailService } from 'src/service/aws/send-email.service';
 import { AuditingService } from 'src/service/auditing.service';
-import { UserService } from '../user/user.service';
+import { NotificationRepository } from './notification.repository';
 
 @Module({
   imports: [HttpModule, GatewayModule],
@@ -18,9 +18,9 @@ import { UserService } from '../user/user.service';
     ErrorExceptionFilters,
     PrismaService,
     ExceptionHandler,
-    UserService,
     EmailService,
-    AuditingService
+    AuditingService,
+    NotificationRepository
   ],
 })
 export class NotificationModule { }

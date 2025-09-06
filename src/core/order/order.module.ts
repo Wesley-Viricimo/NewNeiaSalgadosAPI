@@ -17,6 +17,7 @@ import { AddressService } from '../address/address.service';
 import { ViaCepService } from 'src/service/viacep.service';
 import { AdditionalRepository } from '../additional/additional.repository';
 import { AddressRepository } from '../address/address.repository';
+import { NotificationRepository } from '../notification/notification.repository';
 
 @Module({
   imports: [HttpModule, GatewayModule],
@@ -36,7 +37,8 @@ import { AddressRepository } from '../address/address.repository';
     AddressService,
     ViaCepService,
     AdditionalRepository,
-    AddressRepository
+    AddressRepository,
+    NotificationRepository
   ],
 })
 export class OrderModule { }
