@@ -22,7 +22,6 @@ export class AddressService {
 
     return await this.addressRepository.createAddress(addressDto, userId)
       .then(address => {
-        console.log('address', address)
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Endereço cadastrado com sucesso!' };
         return {
           data: {
@@ -86,7 +85,8 @@ export class AddressService {
         message,
         statusCode: HttpStatus.OK
       }
-    } catch (error) {
+    } catch (err) {
+      this.logger.error(`Erro ao buscar endereço por CEP: ${err}`);
       this.exceptionHandler.errorNotFoundResponse('CEP informado está incorreto!');
     }
   }
@@ -135,7 +135,8 @@ export class AddressService {
           statusCode: HttpStatus.CREATED
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        this.logger.error(`Erro ao atualizar endereço: ${err}`);
         this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar endereço!');
       });
   }
@@ -157,6 +158,7 @@ export class AddressService {
 
       return address;
     } catch (err) {
+      this.logger.error(`Erro ao buscar endereço por id: ${err}`);
       if (err instanceof Error) this.exceptionHandler.errorBadRequestResponse(err.message);
       this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar endereço por id. Erro: ${err}`);
     }

@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Additional } from '@prisma/client';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
@@ -9,6 +9,7 @@ import { AdditionalRepository } from './additional.repository';
 
 @Injectable()
 export class AdditionalService {
+  private readonly logger = new Logger(AdditionalService.name);
 
   constructor(
     private readonly exceptionHandler: ExceptionHandler,
@@ -39,7 +40,8 @@ export class AdditionalService {
           statusCode: HttpStatus.CREATED
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        this.logger.error(`Erro ao cadastrar adicional: ${err}`);
         this.exceptionHandler.errorBadRequestResponse('Erro ao cadastrar adicional!');
       });
   }
@@ -74,7 +76,8 @@ export class AdditionalService {
           statusCode: HttpStatus.CREATED
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        this.logger.error(`Erro ao atualizar adicional: ${err}`);
         this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar adicional!');
       });
   }
@@ -113,7 +116,8 @@ export class AdditionalService {
         } as ActionAuditingModel);
 
       })
-      .catch(() => {
+      .catch((err) => {
+        this.logger.error(`Erro ao excluir adicional: ${err}`);
         this.exceptionHandler.errorBadRequestResponse('Erro ao excluir adicional!');
       })
   }
@@ -125,6 +129,7 @@ export class AdditionalService {
 
       return additional;
     } catch (err) {
+      this.logger.error(`Erro ao buscar adicional por id: ${err}`);
       if (err instanceof Error) this.exceptionHandler.errorBadRequestResponse(err.message);
       this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar adicional por id. Erro: ${err}`);
     }
