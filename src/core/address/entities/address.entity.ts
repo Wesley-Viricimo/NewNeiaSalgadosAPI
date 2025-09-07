@@ -11,14 +11,3 @@ export class Address {
     createdAt: Date
     updatedAt: Date
 }
-
-export const AddressSide = {
-    address: "endereço",
-    cep: "CEP",
-    state: "estado",
-    city: "cidade",
-    district: "bairro",
-    road: "rua",
-    number: "numero",
-    user: "usuário"
-}

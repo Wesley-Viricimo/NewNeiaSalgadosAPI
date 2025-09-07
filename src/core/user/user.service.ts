@@ -1,54 +1,38 @@
-import { Injectable, HttpStatus } from '@nestjs/common';
-import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { Injectable, HttpStatus, Logger } from '@nestjs/common';
 import { UserSide } from './entities/user.entity';
 import { cpf } from 'cpf-cnpj-validator';
 import { hash } from 'bcryptjs';
-import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
-import { userSelectConfig, userTokenSelectConfig } from './config/user-select-config';
-import { Prisma, User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { ROLES } from './constants/users.constants';
 import { EmailService } from 'src/service/aws/send-email.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
 import { ChangeUserStatusDto, MailConfirmationDto, ResendEmailDto, UserDto, UserQuery, UserUpdateParams } from './dto/user.dto';
+import { UserRepository } from './user.repository';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
 
   constructor(
-    private readonly prismaService: PrismaService,
     private readonly emailService: EmailService,
     private readonly exceptionHandler: ExceptionHandler,
-    private readonly auditingService: AuditingService
+    private readonly auditingService: AuditingService,
+    private readonly userRepository: UserRepository
   ) { }
 
   async create(userDto: UserDto) {
-
     await this.validateFieldsCreateUser(userDto);
 
     const passwordHash = await hash(userDto.password, 8);
 
-    return await this.prismaService.user.create({
-      data: {
-        name: userDto.name,
-        surname: userDto.surname,
-        cpf: userDto.cpf,
-        phone: userDto.phone,
-        email: userDto.email,
-        password: passwordHash
-      },
-    })
+    return await this.userRepository.createUser(userDto, passwordHash)
       .then(async (user) => {
         const activationCode = this.generateActivationCode();
 
-        await this.prismaService.userActivationCode.create({
-          data: {
-            code: activationCode,
-            idUser: user.idUser
-          }
-        });
+        await this.userRepository.updateActivationCode(activationCode, user.idUser);
 
         await this.emailService.sendActivateAccountEmail(user.email, user.name, activationCode);
 
@@ -67,45 +51,22 @@ export class UserService {
           statusCode: HttpStatus.CREATED
         };
       })
-      .catch(() => {
+      .catch((err) => {
+        this.logger.error(`Erro ao cadastrar usuário: ${err}`);
         this.exceptionHandler.errorBadRequestResponse('Erro ao cadastrar usuário!');
       });
   }
 
   async createAdmin(user: UserDto) {
-
     await this.validateFieldsCreateUser(user);
 
     const passwordHash = await hash(user.password, 8);
 
-    return await this.prismaService.user.create({
-      data: {
-        name: user.name,
-        surname: user.surname,
-        cpf: user.cpf,
-        phone: user.phone,
-        email: user.email,
-        role: user.role,
-        isActive: true,
-        password: passwordHash
-      },
-    })
+    return await this.userRepository.createAdminUser(user, passwordHash)
       .then(async (user) => {
         const activationCode = this.generateActivationCode();
 
-        const activation = await this.prismaService.userActivationCode.create({
-          data: {
-            code: activationCode,
-            idUser: user.idUser
-          }
-        });
-
-        await this.prismaService.userActivationCode.update({
-          where: { idCode: activation.idCode },
-          data: {
-            confirmed: true
-          }
-        })
+        await this.userRepository.updateActivationCode(activationCode, user.idUser);
 
         const message = { severity: 'success', summary: 'Sucesso', detail: `Usuário ${user.role} cadastrado com sucesso!` };
         return {
@@ -122,7 +83,8 @@ export class UserService {
           statusCode: HttpStatus.CREATED
         };
       })
-      .catch(() => {
+      .catch((err) => {
+        this.logger.error(`Erro ao cadastrar usuário administrador ${user.role}: ${err}`);
         this.exceptionHandler.errorBadRequestResponse(`Erro ao cadastrar usuário ${user.role}!`);
       });
   }
@@ -142,11 +104,6 @@ export class UserService {
   }
 
   async findAll(userQuery: UserQuery): Promise<PaginatedOutputDto<Object>> {
-
-    const selectedFields = userSelectConfig;
-
-    const paginate: PaginatorTypes.PaginateFunction = paginator({ page: userQuery.page, perPage: userQuery.perPage });
-
     const where: Prisma.UserWhereInput = {};
 
     if (userQuery.user) where.name = { contains: userQuery.user, mode: 'insensitive' };
@@ -154,14 +111,7 @@ export class UserService {
     if (userQuery.status == 'active') where.isActive = true;
     if (userQuery.status == 'inactive') where.isActive = false;
 
-    return await paginate<User, Prisma.UserFindManyArgs>(
-      this.prismaService.user,
-      {
-        where,
-        select: selectedFields
-      },
-      { page: userQuery.page, perPage: userQuery.perPage }
-    )
+    return await this.userRepository.findAllUsersPaginated(userQuery, where)
       .then(response => {
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuários listados com sucesso.' };
         return {
@@ -174,7 +124,6 @@ export class UserService {
   }
 
   async findById(id: number) {
-
     const user = await this.getUserById(id);
 
     const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuário listado com sucesso!' };
@@ -195,7 +144,6 @@ export class UserService {
   }
 
   async update(userDto: UserDto, userId: number) {
-
     await this.validateFieldsUpdateUser(userDto, userId);
 
     let passwordHash: string;
@@ -204,21 +152,9 @@ export class UserService {
       passwordHash = await hash(userDto.password, 8);
     }
 
-    const updateUserData: any = {
-      name: userDto.name,
-      surname: userDto.surname,
-      cpf: userDto.cpf,
-      email: userDto.email,
-    };
+    const user = await this.getUserById(userId);
 
-    if (passwordHash) {
-      updateUserData.password = passwordHash;
-    }
-
-    return await this.prismaService.user.update({
-      where: { idUser: userId },
-      data: updateUserData,
-    })
+    return await this.userRepository.updateUser(user, userDto, passwordHash)
       .then(user => {
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Usuário atualizado com sucesso!' };
         return {
@@ -235,7 +171,8 @@ export class UserService {
           statusCode: HttpStatus.OK
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        this.logger.error(`Erro ao atualizar usuário: ${err}`);
         this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar usuário!');
       })
   }
@@ -271,12 +208,8 @@ export class UserService {
 
     if (admin.role == 'ADMIN' && (user.role == 'ADMIN' || user.role == 'DEV')) this.exceptionHandler.errorBadRequestResponse('Não é permitido que usuários ADMIN altere privilégios de outros usuários ADMIN ou DEV!');
 
-    return await this.prismaService.user.update({
-      where: { idUser: user.idUser },
-      data: { role: ROLES[userUpdate.role] }
-    })
+    return await this.userRepository.updateUserRole(userUpdate.userId, ROLES[userUpdate.role])
       .then(async (result) => {
-
         await this.auditingService.saveAudit({
           idUser: admin.idUser,
           action: "ATUALIZAÇÃO DE FUNÇÃO DE USUÁRIO",
@@ -302,22 +235,18 @@ export class UserService {
           statusCode: HttpStatus.CREATED
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        this.logger.error(`Erro ao atualizar função do usuário: ${err}`);
         this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar função do usuário!')
       })
   }
 
   async confirmationCode(mailConfirmation: MailConfirmationDto) {
-
-    const user = await this.prismaService.user.findFirst({
-      where: { email: mailConfirmation.email }
-    });
+    const user = await this.userRepository.findUserByEmail(mailConfirmation.email);
 
     if (!user) this.exceptionHandler.errorNotFoundResponse('Este usuário não está cadastrado no sistema!');
 
-    const confirmationCode = await this.prismaService.userActivationCode.findUnique({
-      where: { idUser: user.idUser }
-    });
+    const confirmationCode = await this.userRepository.findUserActivationCode(user.idUser);
 
     const userConfirmationSelectConfig = {
       select: {
@@ -327,23 +256,11 @@ export class UserService {
 
     if (confirmationCode) {
       if (confirmationCode.confirmed) this.exceptionHandler.errorBadRequestResponse('Esta conta já foi ativa!');
-
       if (confirmationCode.code !== mailConfirmation.code.toUpperCase()) this.exceptionHandler.errorBadRequestResponse('Este código de ativação está incorreto!');
 
-      await this.prismaService.userActivationCode.update({
-        where: { idCode: confirmationCode.idCode },
-        data: { confirmed: true }
-      });
+      await this.userRepository.updateUserActivationCode(confirmationCode.idCode);
 
-      return await this.prismaService.user.update({
-        where: { idUser: user.idUser },
-        data: {
-          isActive: true
-        },
-        include: {
-          userActivationCode: userConfirmationSelectConfig
-        }
-      })
+      return await this.userRepository.updateUserActivity(user.idUser, userConfirmationSelectConfig)
         .then(user => {
           const message = { severity: 'success', summary: 'Sucesso', detail: 'Conta ativada com sucesso!' };
           return {
@@ -360,23 +277,19 @@ export class UserService {
             statusCode: HttpStatus.OK
           }
         })
-        .catch(() => {
+        .catch((err) => {
+          this.logger.error(`Erro ao ativar conta do usuário: ${err}`);
           this.exceptionHandler.errorBadRequestResponse('Erro ao ativar conta!');
         });
     }
   }
 
   async resendConfirmationCode(mailResendDto: ResendEmailDto) {
-
-    const user = await this.prismaService.user.findFirst({
-      where: { email: mailResendDto.email }
-    });
+    const user = await this.userRepository.findUserByEmail(mailResendDto.email);
 
     if (!user) this.exceptionHandler.errorNotFoundResponse('Este usuário não está cadastrado no sistema!');
 
-    const confirmationCode = await this.prismaService.userActivationCode.findUnique({
-      where: { idUser: user.idUser }
-    });
+    const confirmationCode = await this.userRepository.findUserActivationCode(user.idUser);
 
     if (user.isActive && confirmationCode.confirmed) this.exceptionHandler.errorBadRequestResponse('Esta conta já foi ativa');
 
@@ -397,15 +310,8 @@ export class UserService {
 
     if (!user) this.exceptionHandler.errorNotFoundResponse('Este usuário não está cadastrado no sistema!');
 
-    const selectedFields = userSelectConfig;
-
-    return await this.prismaService.user.update({
-      where: { idUser: changeUserStatusDTO.userId },
-      data: { isActive: changeUserStatusDTO.isActive },
-      select: selectedFields
-    })
+    return await this.userRepository.updateUserActivationCodeStatus(changeUserStatusDTO.userId, changeUserStatusDTO.isActive)
       .then(async (result) => {
-
         await this.auditingService.saveAudit({
           idUser: idUser,
           action: "ATUALIZAÇÃO DE ATIVIDADE DE USUÁRIO",
@@ -424,31 +330,15 @@ export class UserService {
           statusCode: HttpStatus.CREATED
         };
       })
-      .catch(() => {
+      .catch((err) => {
+        this.logger.error(`Erro ao atualizar atividade do usuário: ${err}`);
         this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar atividade do usuário!');
       });
   }
 
   async saveNotificationToken(notificationToken: string, userId: number) {
     try {
-
-      return await this.prismaService.userNotificationToken.upsert({
-        where: { idUser: userId }, // Busca pelo userId, para garantir que cada usuário tenha um único token
-        update: {
-          token: notificationToken, // Atualiza o token se já existir
-        },
-        create: {
-          token: notificationToken, // Cria um novo token se não existir
-          user: {
-            connect: {
-              idUser: userId
-            },
-          },
-        },
-        include: {
-          user: userTokenSelectConfig
-        },
-      })
+      return await this.userRepository.saveNotificationToken(userId, notificationToken)
         .then(notificationToken => {
           const message = { severity: 'success', summary: 'Sucesso', detail: 'Token de notificação cadastrado com sucesso!' };
           return {
@@ -462,46 +352,42 @@ export class UserService {
           };
         });
     } catch (error) {
+      this.logger.error(`Erro ao cadastrar token de notificação: ${error}`);
       this.exceptionHandler.errorBadRequestResponse('Erro ao cadastrar token de notificação!');
     }
   }
 
   async getUserById(idUser: number) {
     try {
-      const user = await this.prismaService.user.findUnique({
-        where: { idUser }
-      });
-
+      const user = await this.userRepository.findUserById(idUser);
       if (!user) this.exceptionHandler.errorBadRequestResponse(`O usuário id ${idUser} não está cadastrado no sistema!`);
 
       return user;
     } catch (err) {
+      this.logger.error(`Erro ao buscar usuário por id: ${err}`);
       this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar usuário por id. Erro: ${err}`);
     }
   }
 
   async findUserByEmail(email: string) {
     try {
-      const user = await this.prismaService.user.findUnique({
-        where: { email: email }
-      });
+      const user = await this.userRepository.findUserByEmail(email);
 
       return user;
     } catch (err) {
+      this.logger.error(`Erro ao buscar usuário por e-mail: ${err}`);
       this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar usuário por e-mail. Erro: ${err}`)
     }
   }
 
   async findUserByCpf(cpf: string) {
     try {
-      const user = await this.prismaService.user.findUnique({
-        where: { cpf: cpf }
-      });
-
+      const user = await this.userRepository.findUserByCpf(cpf);
       if (user) throw new Error(`O cpf ${cpf} já foi cadastrado no sistema!`);
 
       return user;
     } catch (err) {
+      this.logger.error(`Erro ao buscar usuário por cpf: ${err}`);
       if (err instanceof Error) this.exceptionHandler.errorBadRequestResponse(err.message);
       this.exceptionHandler.errorBadRequestResponse(`Houve um erro inesperado ao buscar usuário por cpf. Erro: ${err}`)
     }

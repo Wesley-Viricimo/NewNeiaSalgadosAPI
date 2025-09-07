@@ -6,6 +6,7 @@ import { ErrorExceptionFilters } from 'src/service/errorResponse.service';
 import { EmailService } from 'src/service/aws/send-email.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
+import { UserRepository } from './user.repository';
 
 @Module({
   controllers: [UserController],
@@ -15,7 +16,8 @@ import { AuditingService } from 'src/service/auditing.service';
     PrismaService,
     EmailService,
     ExceptionHandler,
-    AuditingService
+    AuditingService,
+    UserRepository
   ],
 })
 export class UserModule {}

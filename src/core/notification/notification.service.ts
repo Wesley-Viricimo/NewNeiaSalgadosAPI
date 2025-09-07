@@ -1,28 +1,26 @@
 import { HttpService } from '@nestjs/axios';
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { lastValueFrom } from 'rxjs';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { NotificationsGateway } from '../gateway/notifications.gateway';
 import { NotificationDto } from './dto/notification.dto';
-import { UserService } from '../user/user.service';
+import { NotificationRepository } from './notification.repository';
 
 @Injectable()
 export class NotificationService {
+    private readonly logger = new Logger(NotificationService.name);
     private readonly expoPushUrl = 'https://exp.host/--/api/v2/push/send';
 
     constructor(
-        private readonly prismaService: PrismaService,
         private readonly exceptionHandler: ExceptionHandler,
         private readonly httpService: HttpService,
         private readonly socketNotification: NotificationsGateway,
-        private readonly userService: UserService
+        private readonly notificationRepository: NotificationRepository
     ) { }
 
     async getAllUnreadNotifications() {
-        return await this.prismaService.notification.findMany({
-            where: { read: false }
-        })
+        return await this.notificationRepository.getAllUnreadNotifications()
             .then(response => {
                 const message = { severity: 'success', summary: 'Sucesso', detail: 'Notificações listadas com sucesso.' };
                 return {
@@ -35,38 +33,27 @@ export class NotificationService {
 
     async markNotificationAsRead(idNotification: number, idUser: number) {
         try {
-            const notification = await this.prismaService.notification.findUnique({ where: { idNotification } });
+            const notification = await this.notificationRepository.findNotificationById(idNotification);
 
             if (!notification) this.exceptionHandler.errorBadRequestResponse('Notificação não foi encontrada!');
 
-            const response = await this.prismaService.notificationRead.create({
-                data: { idNotification, idUser }
-            });
+            const response = await this.notificationRepository.markNotificationUserAsRead(idNotification, idUser);
 
-            await this.prismaService.notification.update({
-                where: { idNotification },
-                data: { read: true }
-            });
+            await this.notificationRepository.markReadNotification(idNotification);
 
             return {
                 data: response,
                 message: { severity: 'success', summary: 'Sucesso', detail: 'Notificação lida com sucesso.' },
                 statusCode: HttpStatus.CREATED
             };
-        } catch {
+        } catch(err) {
+            this.logger.error(`Erro ao marcar notificação como lida: ${err}`);
             this.exceptionHandler.errorBadRequestResponse('Erro ao marcar notificação como lida!');
         }
     }
 
     async sendNotificationToAdmin(dto: NotificationDto) {
-        const notification = await this.prismaService.notification.create({
-            data: {
-                title: dto.title,
-                description: dto.description,
-                type: dto.notificationType
-            }
-        });
-
+        const notification = await this.notificationRepository.createNotification(dto);
         this.socketNotification.emitToAllRoles(dto.notificationType, notification);
     }
 
@@ -95,7 +82,7 @@ export class NotificationService {
             );
 
         } catch (error) {
-            console.error('Erro ao enviar notificação:', error.response?.data || error.message);
+            this.logger.error('Erro ao enviar notificação:', error.response?.data || error.message);
         }
     }
 }

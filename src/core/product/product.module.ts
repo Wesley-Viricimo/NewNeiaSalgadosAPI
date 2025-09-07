@@ -6,6 +6,7 @@ import { ErrorExceptionFilters } from 'src/service/errorResponse.service';
 import { S3Service } from 'src/service/aws/handle-fileS3.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
+import { ProductRepository } from './product.repository';
 
 @Module({
   controllers: [ProductController],
@@ -15,7 +16,8 @@ import { AuditingService } from 'src/service/auditing.service';
     PrismaService,
     ExceptionHandler,
     S3Service,
-    AuditingService
+    AuditingService,
+    ProductRepository
   ],
 })
 export class ProductModule {}

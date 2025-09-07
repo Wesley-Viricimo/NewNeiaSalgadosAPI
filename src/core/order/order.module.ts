@@ -16,6 +16,11 @@ import { S3Service } from 'src/service/aws/handle-fileS3.service';
 import { AddressService } from '../address/address.service';
 import { ViaCepService } from 'src/service/viacep.service';
 import { AdditionalRepository } from '../additional/additional.repository';
+import { AddressRepository } from '../address/address.repository';
+import { NotificationRepository } from '../notification/notification.repository';
+import { OrderRepository } from './order.repository';
+import { ProductRepository } from '../product/product.repository';
+import { UserRepository } from '../user/user.repository';
 
 @Module({
   imports: [HttpModule, GatewayModule],
@@ -34,7 +39,12 @@ import { AdditionalRepository } from '../additional/additional.repository';
     S3Service,
     AddressService,
     ViaCepService,
-    AdditionalRepository
+    AdditionalRepository,
+    AddressRepository,
+    NotificationRepository,
+    OrderRepository,
+    ProductRepository,
+    UserRepository
   ],
 })
 export class OrderModule { }
