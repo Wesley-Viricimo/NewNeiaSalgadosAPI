@@ -33,13 +33,10 @@ export class OrderService {
   ) { }
 
   async create(orderDto: OrderDto, userId: number) {
-
     await this.validateOrderFields(orderDto, userId);
 
     let totalValue = await this.calculateTotalOrderValue(orderDto.orderItens);
-
     const additionalTotalValue = await this.calculateTotalAdditionalValue(orderDto.additionalItens);
-
     totalValue += additionalTotalValue;
 
     const orderAdditionalData = await Promise.all(orderDto.additionalItens.map(async (item) => {
@@ -53,7 +50,6 @@ export class OrderService {
     }));
 
     const orderItemsData = await Promise.all(orderDto.orderItens.map(async (item) => {
-
       const product = await this.productService.getProductById(item.product.idProduct);
 
       return {
@@ -247,13 +243,10 @@ export class OrderService {
   }
 
   async update(id: number, orderDto: OrderDto, userId: number) {
-
     await this.validateOrderFields(orderDto, userId, true, id);
 
     let totalValue = await this.calculateTotalOrderValue(orderDto.orderItens);
-
     const additionalTotalValue = await this.calculateTotalAdditionalValue(orderDto.additionalItens);
-
     totalValue += additionalTotalValue;
 
     const orderAdditionalData = await Promise.all(orderDto.additionalItens.map(async (item) => {

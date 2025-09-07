@@ -19,6 +19,7 @@ import { AdditionalRepository } from '../additional/additional.repository';
 import { AddressRepository } from '../address/address.repository';
 import { NotificationRepository } from '../notification/notification.repository';
 import { OrderRepository } from './order.repository';
+import { ProductRepository } from '../product/product.repository';
 
 @Module({
   imports: [HttpModule, GatewayModule],
@@ -40,7 +41,8 @@ import { OrderRepository } from './order.repository';
     AdditionalRepository,
     AddressRepository,
     NotificationRepository,
-    OrderRepository
+    OrderRepository,
+    ProductRepository
   ],
 })
 export class OrderModule { }

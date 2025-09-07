@@ -8,6 +8,7 @@ import { AuditingService } from 'src/service/auditing.service';
 import { ProductService } from '../product/product.service';
 import { S3Service } from 'src/service/aws/handle-fileS3.service';
 import { CategoryRepository } from './category.repository';
+import { ProductRepository } from '../product/product.repository';
 
 @Module({
   controllers: [CategoryController],
@@ -19,7 +20,8 @@ import { CategoryRepository } from './category.repository';
     AuditingService,
     ProductService,
     S3Service,
-    CategoryRepository
+    CategoryRepository,
+    ProductRepository
   ],
 })
 export class CategoryModule { }

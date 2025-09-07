@@ -19,6 +19,7 @@ import { AdditionalRepository } from 'src/core/additional/additional.repository'
 import { AddressRepository } from 'src/core/address/address.repository';
 import { NotificationRepository } from 'src/core/notification/notification.repository';
 import { OrderRepository } from 'src/core/order/order.repository';
+import { ProductRepository } from 'src/core/product/product.repository';
 
 @Module({
   imports: [ 
@@ -44,7 +45,8 @@ import { OrderRepository } from 'src/core/order/order.repository';
     AdditionalRepository,
     AddressRepository,
     NotificationRepository,
-    OrderRepository
+    OrderRepository,
+    ProductRepository
   ],
 })
 export class SchedulesModule {}
