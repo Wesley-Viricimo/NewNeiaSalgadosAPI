@@ -1,10 +1,7 @@
 import { Injectable, HttpStatus, Logger } from '@nestjs/common';
-import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { PAYMENT_METHOD, TYPE_OF_DELIVERY, ORDER_STATUS_DELIVERY, ORDER_STATUS_WITHDRAWAL, ORDER_PLACED, ORDER_STATUS } from './constants/order.constants';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
-import { Order, Prisma } from '@prisma/client';
-import { paginator, PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
-import { userSelectConfig, addressSelectConfig, orderItensSelectConfig, orderSelectFields, orderSelectByIdFields, additionalsSelectFields } from 'src/core/order/config/order-select-config';
+import { Prisma } from '@prisma/client';
 import { subMinutes, isAfter, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import getMessageStatus from './constants/order.messages';
@@ -18,18 +15,21 @@ import { AdditionalService } from '../additional/additional.service';
 import { ProductService } from '../product/product.service';
 import { UserService } from '../user/user.service';
 import { AddressService } from '../address/address.service';
+import { OrderRepository } from './order.repository';
 
 @Injectable()
 export class OrderService {
+  private readonly logger = new Logger(OrderService.name);
+
   constructor(
-    private readonly prismaService: PrismaService,
     private readonly exceptionHandler: ExceptionHandler,
     private readonly notificationService: NotificationService,
     private readonly auditingService: AuditingService,
     private readonly additionalService: AdditionalService,
     private readonly productService: ProductService,
     private readonly userService: UserService,
-    private readonly addressService: AddressService
+    private readonly addressService: AddressService,
+    private readonly orderRepository: OrderRepository
   ) { }
 
   async create(orderDto: OrderDto, userId: number) {
@@ -94,50 +94,39 @@ export class OrderService {
       };
     }
 
-    return await this.prismaService.order.create({
-      data: orderData,
-      include: {
-        user: userSelectConfig,
-        address: addressSelectConfig,
-        orderItens: orderItensSelectConfig,
-        orderAdditional: additionalsSelectFields
-      }
-    }).then(async (order) => {
+    return await this.orderRepository.createOrder(orderData)
+      .then(async (order) => {
+        const userNotificationToken = await this.orderRepository.getUserNotificationToken(userId);
+        if (userNotificationToken) await this.notificationService.sendNotificationToUser(userNotificationToken.token, ORDER_PLACED.title, ORDER_PLACED.body);
 
-      const userNotificationToken = await this.prismaService.userNotificationToken.findUnique({
-        where: { idUser: order.idUser }
+        const notification: NotificationDto = {
+          title: `${user.surname} realizou um novo pedido`,
+          description: `O cliente ${user.surname} realizou um novo pedido!`,
+          notificationType: 'success'
+        };
+
+        await this.notificationService.sendNotificationToAdmin(notification);
+
+        const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido realizado com sucesso!' };
+        return {
+          data: {
+            user: order.user,
+            address: order.address,
+            orderItens: order.orderItens,
+            orderAdditional: order.orderAdditional,
+            orderStatus: order.orderStatus,
+            paymentMethod: order.paymentMethod,
+            typeOfDelivery: order.typeOfDelivery,
+            totalAdditional: order.totalAdditional,
+            total: order.total
+          },
+          message,
+          statusCode: HttpStatus.CREATED
+        };
+      }).catch((err) => {
+        this.logger.error(`Erro ao realizar pedido: ${err}`);
+        this.exceptionHandler.errorBadRequestResponse('Erro ao realizar pedido!');
       });
-
-      if (userNotificationToken) await this.notificationService.sendNotificationToUser(userNotificationToken.token, ORDER_PLACED.title, ORDER_PLACED.body);
-
-      const notification: NotificationDto = {
-        title: `${user.surname} realizou um novo pedido`,
-        description: `O cliente ${user.surname} realizou um novo pedido!`,
-        notificationType: 'success'
-      };
-
-      await this.notificationService.sendNotificationToAdmin(notification);
-
-      const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido realizado com sucesso!' };
-      return {
-        data: {
-          user: order.user,
-          address: order.address,
-          orderItens: order.orderItens,
-          orderAdditional: order.orderAdditional,
-          orderStatus: order.orderStatus,
-          paymentMethod: order.paymentMethod,
-          typeOfDelivery: order.typeOfDelivery,
-          totalAdditional: order.totalAdditional,
-          total: order.total
-        },
-        message,
-        statusCode: HttpStatus.CREATED
-      };
-    }).catch((error) => {
-      console.log('err', error)
-      this.exceptionHandler.errorBadRequestResponse('Erro ao realizar pedido!');
-    });
   }
 
   private async validateOrderFields(orderDto: OrderDto, userId: number, isUpdate = false, orderId?: number) {
@@ -159,9 +148,7 @@ export class OrderService {
     }
 
     if (isUpdate) {
-      const order = await this.prismaService.order.findUnique({
-        where: { idOrder: orderId }
-      });
+      const order = await this.orderRepository.findOrderById(orderId);
 
       if (order?.idUser !== userId) this.exceptionHandler.errorForbiddenResponse(`Este pedido não pertence a este usuário!`);
 
@@ -170,13 +157,10 @@ export class OrderService {
       if (order.orderStatus == ORDER_STATUS.PREPARANDO) {
         const tenMinutesAgo = subMinutes(new Date(), 10);
 
-        if (isAfter(tenMinutesAgo, order.orderStatusUpdatedAt)) this.exceptionHandler.errorBadRequestResponse(`Pedidos pendentes só podem ser atualizados até 10 minutos após a última atualização!`);
+        if (isAfter(tenMinutesAgo, order.updatedAt)) this.exceptionHandler.errorBadRequestResponse(`Pedidos pendentes só podem ser atualizados até 10 minutos após a última atualização!`);
       }
     } else {
-      const orderPending = await this.prismaService.order.findFirst({
-        where: { idUser: userId, deliveryDate: null }
-      });
-
+      const orderPending = await this.orderRepository.findOrderPendingByUserId(userId);
       if (orderPending) this.exceptionHandler.errorBadRequestResponse(`Já existe um pedido em andamento para este usuário e não é possível realizar outro no momento!`);
     }
   }
@@ -205,25 +189,13 @@ export class OrderService {
   }
 
   async findAllOrders(orderQuery: OrderFindAllQuery): Promise<PaginatedOutputDto<Object>> {
-    const selectedFields = orderSelectFields;
-
-    const paginate: PaginatorTypes.PaginateFunction = paginator({ page: orderQuery.page, perPage: orderQuery.perPage });
-
     const where: Prisma.OrderWhereInput = {};
 
     if (orderQuery.user) where.user = { name: { contains: orderQuery.user, mode: 'insensitive' } };
     if (orderQuery.status === 'complete') where.deliveryDate = { not: null };
     if (orderQuery.status === 'pending') where.deliveryDate = null;
 
-    return await paginate<Order, Prisma.OrderFindManyArgs>(
-      this.prismaService.order,
-      {
-        where,
-        orderBy: { createdAt: 'asc' },
-        select: selectedFields
-      },
-      { page: orderQuery.page, perPage: orderQuery.perPage }
-    )
+    return await this.orderRepository.findAllOrdersPaginated(orderQuery, where)
       .then(response => {
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedidos listados com sucesso.' };
         return {
@@ -236,19 +208,7 @@ export class OrderService {
   }
 
   async findAllOrdersByUser(orderQuery: OrderFindAllQuery, userId: number): Promise<PaginatedOutputDto<Object>> {
-
-    const selectedFields = orderSelectFields;
-
-    const paginate: PaginatorTypes.PaginateFunction = paginator({ page: orderQuery.page, perPage: orderQuery.perPage });
-
-    return await paginate<Order, Prisma.OrderFindManyArgs>(
-      this.prismaService.order,
-      {
-        where: { idUser: userId },
-        select: selectedFields,
-      },
-      { page: orderQuery.page, perPage: orderQuery.perPage }
-    )
+    return this.orderRepository.findAllOrdersByUserPaginated(orderQuery, userId)
       .then(response => {
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedidos listados com sucesso.' };
         return {
@@ -261,13 +221,7 @@ export class OrderService {
   }
 
   async findById(id: number, userId: number) {
-
-    const selectedFields = orderSelectByIdFields;
-
-    const order = await this.prismaService.order.findUnique({
-      where: { idOrder: id },
-      select: selectedFields
-    });
+    const order = await this.orderRepository.findOrderById(id);
 
     if (!order) this.exceptionHandler.errorNotFoundResponse(`Este pedido não está cadastrado no sistema!`);
 
@@ -313,7 +267,6 @@ export class OrderService {
     }));
 
     const orderItemsData = await Promise.all(orderDto.orderItens.map(async (item) => {
-
       const product = await this.productService.getProductById(item.product.idProduct);
 
       return {
@@ -324,27 +277,7 @@ export class OrderService {
       };
     }));
 
-    return await this.prismaService.order.update({
-      where: { idOrder: id },
-      data: {
-        typeOfDelivery: TYPE_OF_DELIVERY[orderDto.typeOfDelivery],
-        paymentMethod: PAYMENT_METHOD[orderDto.paymentMethod],
-        totalAdditional: additionalTotalValue,
-        total: totalValue,
-        orderAdditional: {
-          create: orderAdditionalData
-        },
-        orderItens: {
-          create: orderItemsData
-        }
-      },
-      include: {
-        user: userSelectConfig,
-        address: addressSelectConfig,
-        orderItens: orderItensSelectConfig,
-        orderAdditional: additionalsSelectFields
-      }
-    })
+    return this.orderRepository.updateOrder(id, orderDto, additionalTotalValue, totalValue, orderAdditionalData, orderItemsData)
       .then(order => {
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Pedido atualizado com sucesso!' };
         return {
@@ -364,16 +297,14 @@ export class OrderService {
           statusCode: HttpStatus.CREATED
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        this.logger.error(`Erro ao atualizar pedido: ${err}`);
         this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar pedido!');
       });
   }
 
   async validateUpdateOrderStatus(orderUpdateStatus: OrderUpdateStatusParams, userId: number) {
-
-    const order = await this.prismaService.order.findUnique({
-      where: { idOrder: orderUpdateStatus.orderId }
-    });
+    const order = await this.orderRepository.findOrderById(orderUpdateStatus.orderId);
 
     if (!order) this.exceptionHandler.errorNotFoundResponse(`Este pedido não foi encontrado!`);
     if (order.orderStatus == ORDER_STATUS.ENTREGUE) this.exceptionHandler.errorBadRequestResponse(`Pedidos entregues não podem ser alterados!`);
@@ -409,22 +340,8 @@ export class OrderService {
   }
 
   async updateOrderStatus(orderId: number, orderStatus: string, isPending: boolean, typeOfDelivery: string, userId: number, previousOrderStatus: string) {
-    return await this.prismaService.order.update({
-      where: { idOrder: orderId },
-      data: {
-        orderStatus: orderStatus,
-        deliveryDate: !isPending ? new Date() : null,
-        orderStatusUpdatedAt: new Date()
-      },
-      include: {
-        user: userSelectConfig,
-        address: addressSelectConfig,
-        orderItens: orderItensSelectConfig,
-        orderAdditional: additionalsSelectFields
-      }
-    })
+    return this.orderRepository.updateOrderStatus(orderId, orderStatus, isPending)
       .then(async (order) => {
-
         const notificationType = orderStatus == ORDER_STATUS.ENTREGUE ? 'success' : orderStatus == ORDER_STATUS.CANCELADO ? 'error' : 'info';
 
         const notification = {
@@ -445,9 +362,7 @@ export class OrderService {
           newValue: order.orderStatus
         } as ActionAuditingModel);
 
-        const userNotificationToken = await this.prismaService.userNotificationToken.findUnique({
-          where: { idUser: order.idUser }
-        });
+        const userNotificationToken = await this.orderRepository.getUserNotificationToken(order.idUser);
 
         const messageStatus = getMessageStatus(orderStatus, typeOfDelivery);
         if (userNotificationToken) {
@@ -473,24 +388,14 @@ export class OrderService {
           statusCode: HttpStatus.CREATED
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        this.logger.error(`Erro ao atualizar status do pedido: ${err}`);
         this.exceptionHandler.errorBadRequestResponse('Erro ao atualizar status do pedido!');
       });
   }
 
   async getPendingOrders() {
-    const twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000);
-
-    return await this.prismaService.order.findMany({
-      where: {
-        orderStatus: {
-          notIn: [ORDER_STATUS.ENTREGUE, ORDER_STATUS.CANCELADO],
-        },
-        updatedAt: {
-          lt: twentyMinutesAgo,
-        },
-      },
-    })
+    return await this.orderRepository.getPendingOrders();
   }
 
   async getOrdersTotalizers(period: number) {
@@ -500,66 +405,20 @@ export class OrderService {
       dateFrom.setDate(dateFrom.getDate() - period);
 
       // --- Totais de pedidos em quantidade ---
-      const ordersPending = await this.prismaService.order.findMany({
-        where: {
-          createdAt: { gte: dateFrom },
-          NOT: { orderStatus: { in: [ORDER_STATUS.ENTREGUE, ORDER_STATUS.CANCELADO] } }
-        },
-        select: { idOrder: true, total: true, paymentMethod: true }
-      });
-
-      const ordersFinish = await this.prismaService.order.findMany({
-        where: {
-          createdAt: { gte: dateFrom },
-          orderStatus: ORDER_STATUS.ENTREGUE
-        },
-        select: { idOrder: true, total: true, paymentMethod: true }
-      });
-
-      const ordersCanceled = await this.prismaService.order.findMany({
-        where: {
-          createdAt: { gte: dateFrom },
-          orderStatus: ORDER_STATUS.CANCELADO
-        },
-        select: { idOrder: true, total: true, paymentMethod: true }
-      });
+      const ordersPending = await this.orderRepository.getOrdersPendingCount(dateFrom);
+      const ordersFinish = await this.orderRepository.getOrdersCountByStatus(dateFrom, ORDER_STATUS.ENTREGUE);
+      const ordersCanceled = await this.orderRepository.getOrdersCountByStatus(dateFrom, ORDER_STATUS.CANCELADO);
 
       const [{ _sum: { total: totalPending } },
         { _sum: { total: totalFinish } },
-        { _sum: { total: totalCanceled } }] = await Promise.all([
-          this.prismaService.order.aggregate({
-            where: {
-              createdAt: { gte: dateFrom },
-              NOT: { orderStatus: { in: [ORDER_STATUS.ENTREGUE, ORDER_STATUS.CANCELADO] } }
-            },
-            _sum: { total: true }
-          }),
-
-          this.prismaService.order.aggregate({
-            where: {
-              createdAt: { gte: dateFrom },
-              orderStatus: ORDER_STATUS.ENTREGUE
-            },
-            _sum: { total: true }
-          }),
-
-          this.prismaService.order.aggregate({
-            where: {
-              createdAt: { gte: dateFrom },
-              orderStatus: ORDER_STATUS.CANCELADO
-            },
-            _sum: { total: true }
-          })
-        ]);
+        { _sum: { total: totalCanceled } }] = await this.orderRepository.getOrdersTotalsByStatus(dateFrom);
 
       const ordersFinishAndPending = [...ordersFinish, ...ordersPending];
       const moneyOrders = ordersFinishAndPending.filter(order => order.paymentMethod === 'DINHEIRO');
       const pixOrders = ordersFinishAndPending.filter(order => order.paymentMethod === 'PIX');
       const creditCardOrders = ordersFinishAndPending.filter(order => order.paymentMethod === 'CARTÃO DE CRÉDITO');
 
-      const allOrderItems = await this.prismaService.orderItem.findMany({
-        where: { idOrder: { in: ordersFinishAndPending.map(order => order.idOrder) } }
-      });
+      const allOrderItems = await this.orderRepository.getOrdersItens(ordersFinishAndPending);
 
       const productCountMap: Record<string, number> = {};
       allOrderItems.forEach(item => {
@@ -595,6 +454,7 @@ export class OrderService {
       };
 
     } catch (err) {
+      this.logger.error(`Erro ao buscar totalizadores: ${err}`);
       this.exceptionHandler.errorBadRequestResponse(`Houve um erro desconhecido ao buscar totalizadores. Erro ${err}`);
     }
   }

@@ -18,6 +18,7 @@ import { ViaCepService } from 'src/service/viacep.service';
 import { AdditionalRepository } from '../additional/additional.repository';
 import { AddressRepository } from '../address/address.repository';
 import { NotificationRepository } from '../notification/notification.repository';
+import { OrderRepository } from './order.repository';
 
 @Module({
   imports: [HttpModule, GatewayModule],
@@ -38,7 +39,8 @@ import { NotificationRepository } from '../notification/notification.repository'
     ViaCepService,
     AdditionalRepository,
     AddressRepository,
-    NotificationRepository
+    NotificationRepository,
+    OrderRepository
   ],
 })
 export class OrderModule { }
