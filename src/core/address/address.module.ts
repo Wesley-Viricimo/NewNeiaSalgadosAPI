@@ -10,6 +10,7 @@ import { UserService } from '../user/user.service';
 import { AuditingService } from 'src/service/auditing.service';
 import { EmailService } from 'src/service/aws/send-email.service';
 import { AddressRepository } from './address.repository';
+import { UserRepository } from '../user/user.repository';
 
 @Module({
   imports: [HttpModule],
@@ -24,7 +25,8 @@ import { AddressRepository } from './address.repository';
     EmailService,
     ExceptionHandler,
     AuditingService,
-    AddressRepository
+    AddressRepository,
+    UserRepository
   ],
 })
 export class AddressModule { }
