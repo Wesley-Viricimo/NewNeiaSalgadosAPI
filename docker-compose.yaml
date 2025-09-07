@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: neiasalgados-api
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    networks:
+      - app-network
+    environment:
+      - NODE_ENV=production
+
+networks:
+  app-network:
+    driver: bridge

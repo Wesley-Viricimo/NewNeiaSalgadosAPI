@@ -9,14 +9,17 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter()
   );
+  
   app.useGlobalPipes(new ValidationPipe());
   await app.register(multipart as any);
+  
   app.enableCors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
-  await app.listen(3000);
+
+  await app.listen(3000, '0.0.0.0');
 }
 
 bootstrap();
