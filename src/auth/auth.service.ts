@@ -4,9 +4,11 @@ import { compare } from 'bcryptjs';
 import { TokenService } from './token/token.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuthDto } from './dto/auth.dto';
+import { User } from '@prisma/client';
 
 interface TokenAuthPayload {
   idUser: number,
+  surname: string,
   email: string,
   isActive: boolean,
   role: string
@@ -36,9 +38,6 @@ export class AuthService {
 
       return { 
         data: {
-          userId: user.idUser,
-          name: user.surname,
-          role: user.role,
           token: await this.tokenService.createToken(payload)
         },
         message,
@@ -49,9 +48,10 @@ export class AuthService {
     }
   }
 
-  private createPayload(user: any): TokenAuthPayload {
+  private createPayload(user: User): TokenAuthPayload {
     return {
       idUser: user.idUser,
+      surname: user.surname,
       email: user.email,
       isActive: user.isActive,
       role: user.role
