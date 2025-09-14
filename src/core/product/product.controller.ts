@@ -8,12 +8,13 @@ import { FileFastifyInterceptor } from "fastify-file-interceptor";
 import { FastifyRequest } from 'fastify';
 import { ProductDto, ProductDtoSchema, ProductQuery, ProductQuerySchema } from './dto/product.dto';
 import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
+import { RolesHelper } from 'src/shared/utils/helpers/roles.helper';
 
 @Controller('api/v1/product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
-  @Roles('ADMIN', 'DEV')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV)
   @HttpCode(HttpStatus.CREATED)
   @Post()
   @UseInterceptors(FileFastifyInterceptor('file'))
@@ -38,7 +39,7 @@ export class ProductController {
     return this.productService.findById(+id);
   }
 
-  @Roles('ADMIN', 'DEV')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV)
   @HttpCode(HttpStatus.CREATED)
   @Patch(':id')
   @UseInterceptors(FileFastifyInterceptor('file'))
@@ -51,7 +52,7 @@ export class ProductController {
     return this.productService.update(+id, productDto, file, request['userId']);
   }
 
-  @Roles('ADMIN', 'DEV')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   delete(

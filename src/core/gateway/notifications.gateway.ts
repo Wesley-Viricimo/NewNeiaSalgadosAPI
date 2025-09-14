@@ -2,6 +2,7 @@ import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDiscon
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { Notification } from '@prisma/client';
+import { RolesHelper } from 'src/shared/utils/helpers/roles.helper';
 
 @WebSocketGateway({
     cors: {
@@ -32,9 +33,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             where: { idUser: Number(userId) },
         });
 
-        if (user && ['DEV', 'ADMIN', 'COMERCIAL'].includes(user.role)) {
+        if (user && [RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL].map(role => role.toString()).includes(user.role)) {
             this.connectedUsers.set(socket.id, userId);
-            socket.join(user.role.toLowerCase())
+            socket.join(user.role.toLowerCase());
             console.log(`User ${user.name} ID ${userId} connected with role ${user.role}`);
         } else {
             socket.disconnect();

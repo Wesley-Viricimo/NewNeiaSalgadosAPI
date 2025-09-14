@@ -7,6 +7,7 @@ import { Order } from './entities/order.entity';
 import { FastifyRequest } from 'fastify';
 import { OrderDto, OrderDtoSchema, OrderFindAllQuery, OrderFindAllQuerySchema, OrderTotalizersQuery, OrderTotalizersQuerySchema, OrderUpdateStatusParams, OrderUpdateStatusParamsSchema } from './dto/order-dto';
 import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
+import { RolesHelper } from 'src/shared/utils/helpers/roles.helper';
 
 @Controller('api/v1/order')
 export class OrderController {
@@ -18,7 +19,7 @@ export class OrderController {
     return this.orderService.create(orderDto, request['userId']);
   }
 
-  @Roles('ADMIN', 'DEV')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL)
   @Get()
   findAllOrders(
     @Query(new ZodValidationPipe(OrderFindAllQuerySchema)) orderQuery: OrderFindAllQuery
@@ -50,7 +51,7 @@ export class OrderController {
     return this.orderService.update(+id, updateOrderDto, request['userId']);
   }
 
-  @Roles('ADMIN', 'DEV')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV)
   @Patch(':orderId/orderstatus/:orderStatus')
   @HttpCode(HttpStatus.CREATED)
   updateOrderStatus(
@@ -60,7 +61,7 @@ export class OrderController {
     return this.orderService.validateUpdateOrderStatus(orderUpdateStatus, request['userId']);
   }
 
-  @Roles('ADMIN', 'DEV')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL)
   @Get('totalizers')
   @HttpCode(HttpStatus.OK)
   async getTotalizers(

@@ -4,13 +4,13 @@ import { cpf } from 'cpf-cnpj-validator';
 import { hash } from 'bcryptjs';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { Prisma } from '@prisma/client';
-import { ROLES } from './constants/users.constants';
 import { EmailService } from 'src/service/aws/send-email.service';
 import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler';
 import { AuditingService } from 'src/service/auditing.service';
 import { ActionAuditingModel } from 'src/shared/types/auditing';
 import { ChangeUserStatusDto, MailConfirmationDto, ResendEmailDto, UserDto, UserQuery, UserUpdateParams } from './dto/user.dto';
 import { UserRepository } from './user.repository';
+import { ROLES, RolesHelper } from 'src/shared/utils/helpers/roles.helper';
 
 @Injectable()
 export class UserService {
@@ -198,15 +198,15 @@ export class UserService {
 
     const admin = await this.getUserById(adminId);
 
-    if (ROLES[userUpdate.role] == 'DEV' && ROLES[userUpdate.role] != admin.role) this.exceptionHandler.errorBadRequestResponse(`Somente usuários DEV podem alterar a função do usuário para DEV!`);
-    if (admin.role == 'ADMIN' && ROLES[userUpdate.role] == 'ADMIN') this.exceptionHandler.errorBadRequestResponse('Somente usuários DEV podem alterar a função do usuário para ADMIN!');
+    if (ROLES[userUpdate.role] == RolesHelper.DEV && ROLES[userUpdate.role] != admin.role) this.exceptionHandler.errorBadRequestResponse(`Somente usuários ${RolesHelper.DEV} podem alterar a função do usuário para ${RolesHelper.DEV}!`);
+    if (admin.role == RolesHelper.ADMIN && ROLES[userUpdate.role] == RolesHelper.ADMIN) this.exceptionHandler.errorBadRequestResponse(`Somente usuários ${RolesHelper.DEV} podem alterar a função do usuário para ${RolesHelper.ADMIN}!`);
 
     const user = await this.getUserById(userUpdate.userId);
 
     if (!user) this.exceptionHandler.errorBadRequestResponse('Este usuário não está cadastrado no sistema!');
     if (user.isActive == false) this.exceptionHandler.errorBadRequestResponse('Não é possível alterar a função de usuários inativos!');
 
-    if (admin.role == 'ADMIN' && (user.role == 'ADMIN' || user.role == 'DEV')) this.exceptionHandler.errorBadRequestResponse('Não é permitido que usuários ADMIN altere privilégios de outros usuários ADMIN ou DEV!');
+    if (admin.role == RolesHelper.ADMIN && (user.role == RolesHelper.ADMIN || user.role == RolesHelper.DEV)) this.exceptionHandler.errorBadRequestResponse(`Não é permitido que usuários ${RolesHelper.ADMIN} altere privilégios de outros usuários ${RolesHelper.ADMIN} ou ${RolesHelper.DEV}!`);
 
     return await this.userRepository.updateUserRole(userUpdate.userId, ROLES[userUpdate.role])
       .then(async (result) => {
@@ -219,6 +219,8 @@ export class UserService {
           previousValue: user,
           newValue: result
         } as ActionAuditingModel);
+
+        console.log('result', result);
 
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Função do usuário atualizada com sucesso!' };
         return {

@@ -4,7 +4,7 @@ import { UserDto, UserQuery } from "./dto/user.dto";
 import { Prisma, User } from "@prisma/client";
 import { paginator, PaginatorTypes } from "@nodeteam/nestjs-prisma-pagination";
 import { userSelectConfig, userTokenSelectConfig } from "./config/user-select-config";
-import { ROLES } from "./constants/users.constants";
+import { ROLES } from "src/shared/utils/helpers/roles.helper";
 
 @Injectable()
 export class UserRepository {
@@ -56,7 +56,7 @@ export class UserRepository {
     async updateUserRole(userId: number, role: string) {
         return await this.prismaService.user.update({
             where: { idUser: userId },
-            data: { role: ROLES[role] }
+            data: { role: role }
         })
     }
 

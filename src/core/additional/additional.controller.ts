@@ -5,12 +5,13 @@ import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
 import { AdditionalDto, AdditionalDtoSchema, AdditionalQuery, AdditionalQuerySchema } from './dto/additional.dto';
+import { RolesHelper } from 'src/shared/utils/helpers/roles.helper';
 
 @Controller('api/v1/additional')
 export class AdditionalController {
   constructor(private readonly additionalService: AdditionalService) { }
 
-  @Roles('ADMIN', 'DEV')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL)
   @HttpCode(HttpStatus.CREATED)
   @Post()
   create(
@@ -20,7 +21,7 @@ export class AdditionalController {
     return this.additionalService.create(additionalDto, request['userId']);
   }
 
-  @Roles('ADMIN', 'DEV')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL)
   @HttpCode(HttpStatus.CREATED)
   @Patch(':id')
   update(
@@ -39,7 +40,7 @@ export class AdditionalController {
     return await this.additionalService.findAllAdditional(additionalQuery);
   }
 
-  @Roles('ADMIN', 'DEV')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   remove(

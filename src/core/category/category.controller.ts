@@ -5,6 +5,7 @@ import { Roles } from 'src/shared/decorators/rolesPermission.decorator';
 import { PaginatedOutputDto } from 'src/shared/pagination/paginatedOutput.dto';
 import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
 import { CategoryDto, CategoryDtoSchema, CategoryQuery, CategoryQuerySchema } from './dto/category.dto';
+import { RolesHelper } from 'src/shared/utils/helpers/roles.helper';
 
 @Controller('api/v1/category')
 export class CategoryController {
@@ -12,7 +13,7 @@ export class CategoryController {
     private readonly categoryService: CategoryService
   ) {}
 
-  @Roles('ADMIN', 'DEV')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL)
   @HttpCode(HttpStatus.CREATED)
   @Post()
   create(
@@ -36,6 +37,7 @@ export class CategoryController {
     return this.categoryService.findById(+id);
   }
 
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL)
   @HttpCode(HttpStatus.CREATED)
   @Patch(':id')
   update(
@@ -46,6 +48,7 @@ export class CategoryController {
     return this.categoryService.update(+id, categoryDto, request['userId']);
   }
 
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   remove(

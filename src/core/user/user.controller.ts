@@ -8,6 +8,7 @@ import { User } from './entities/user.entity';
 import { FastifyRequest } from 'fastify';
 import { ZodValidationPipe } from 'src/shared/utils/pipes/zod-validation.pipe';
 import { ChangeUserStatusDto, ChangeUserStatusSchema, MailConfirmationDto, MailConfirmationSchema, ResendEmailDto, ResendEmailSchema, UserDto, UserDtoSchema, UserQuery, UserQuerySchema, UserUpdateParams, UserUpdateParamsSchema } from './dto/user.dto';
+import { RolesHelper } from 'src/shared/utils/helpers/roles.helper';
 
 @Controller('api/v1/user')
 export class UserController {
@@ -20,14 +21,14 @@ export class UserController {
     return this.userService.create(userDto);
   }
 
-  @Roles('ADMIN', 'DEV')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV)
   @Post('create-admin')
   @HttpCode(HttpStatus.CREATED)
   createAdmin(@Body(new ZodValidationPipe(UserDtoSchema)) userDto: UserDto) {
     return this.userService.createAdmin(userDto)
   }
 
-  @Roles('ADMIN', 'DEV', 'COMERCIAL')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL)
   @Get()
   @ApiPaginatedResponse(User)
   async findAll(
@@ -36,7 +37,7 @@ export class UserController {
     return await this.userService.findAll(userQuery);
   }
 
-  @Roles('ADMIN', 'DEV', 'COMERCIAL')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL)
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.userService.findById(+id);
@@ -48,7 +49,7 @@ export class UserController {
     return this.userService.update(userDto, request['userId'] );
   }
 
-  @Roles('DEV', 'ADMIN')
+  @Roles(RolesHelper.DEV, RolesHelper.ADMIN)
   @Patch(':userId/role/:role')
   async updateUserRole(
     @Param(new ZodValidationPipe(UserUpdateParamsSchema)) userUpdate: UserUpdateParams,
@@ -69,7 +70,7 @@ export class UserController {
     return this.userService.resendConfirmationCode(mailResendDto);
   }
 
-  @Roles('ADMIN', 'DEV')
+  @Roles(RolesHelper.ADMIN, RolesHelper.DEV)
   @Patch('changeUserActivity')
   @HttpCode(HttpStatus.CREATED)
   changeUserActivity(
