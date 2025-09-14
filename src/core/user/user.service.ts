@@ -220,8 +220,6 @@ export class UserService {
           newValue: result
         } as ActionAuditingModel);
 
-        console.log('result', result);
-
         const message = { severity: 'success', summary: 'Sucesso', detail: 'Função do usuário atualizada com sucesso!' };
         return {
           data: {
