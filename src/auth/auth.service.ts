@@ -6,7 +6,7 @@ import { ExceptionHandler } from 'src/shared/utils/exceptions/exceptions-handler
 import { AuthDto } from './dto/auth.dto';
 import { User } from '@prisma/client';
 
-interface TokenAuthPayload {
+export interface TokenAuthPayload {
   idUser: number,
   surname: string,
   email: string,

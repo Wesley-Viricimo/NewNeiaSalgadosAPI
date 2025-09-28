@@ -19,6 +19,8 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
+  app.enableShutdownHooks();
+
   await app.listen(3000, '0.0.0.0');
 }
 

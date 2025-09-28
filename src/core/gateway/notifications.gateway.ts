@@ -1,8 +1,10 @@
-import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, MessageBody } from '@nestjs/websockets';
+import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { Notification } from '@prisma/client';
 import { RolesHelper } from 'src/shared/utils/helpers/roles.helper';
+import { TokenDecoderService } from 'src/auth/token/token-decoder.service';
+import { Logger, OnApplicationShutdown } from '@nestjs/common';
 
 @WebSocketGateway({
     cors: {
@@ -10,53 +12,92 @@ import { RolesHelper } from 'src/shared/utils/helpers/roles.helper';
         methods: ['GET', 'POST'],
     },
 })
-export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, OnApplicationShutdown {
+    private readonly logger = new Logger(NotificationsGateway.name);
     @WebSocketServer() server: Server;
 
     private connectedUsers: Map<string, string> = new Map();
 
-    constructor(private readonly prismaService: PrismaService) { }
+    constructor(
+        private readonly prismaService: PrismaService,
+        private readonly tokenDecoder: TokenDecoderService
+    ) { }
 
-    async handleConnection(socket: Socket) {
-        const userId = socket.handshake.query.userId as string;
+    afterInit(server: Server) {
+        this.logger.debug('WebSocket Gateway initialized');
+    }
 
-        if (!userId) {
-            socket.disconnect();
-            return;
+    async onApplicationShutdown(signal?: string) {
+        this.logger.debug(`Application is shutting down... Signal: ${signal}`);
+
+        const roles = [RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL];
+        
+        for (const role of roles) {
+            this.server.to(role).emit('disconnect-socket-id', { 
+                message: 'Server is shutting down', 
+                reason: 'server_shutdown',
+                timestamp: new Date().toISOString()
+            });
         }
 
-        console.log('Connected:', socket.id);
-        console.log('DeskId(Connection):', userId);
-        socket.emit('socket-id', socket.id);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        this.server.disconnectSockets();        
+        this.logger.debug('All users disconnected due to server shutdown');
+    }
 
-        const user = await this.prismaService.user.findUnique({
-            where: { idUser: Number(userId) },
-        });
+    async handleConnection(socket: Socket) {
+        try {
+            const token = socket.handshake.headers.authorization as string;
+            
+            if (!token) {
+                socket.disconnect();
+                return;
+            }
+            
+            const payload = this.tokenDecoder.decodeToken(token);
+            const userId = payload.idUser.toString();
 
-        if (user && [RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL].map(role => role.toString()).includes(user.role)) {
+            const user = await this.prismaService.user.findUnique({
+                where: { idUser: payload.idUser },
+            });
+
+            if (!user.isActive) {
+                this.logger.error(`User ${userId} inactive not allowed to connect`);
+                socket.disconnect();
+                return;
+            }
+
+            const validRoles = [RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL].map(role => role.toString());
+            if (!validRoles.includes(user.role)) {
+                this.logger.error(`Connection rejected for user ${userId} - invalid role: ${user.role}`);
+                socket.disconnect();
+                return;
+            }
+
             this.connectedUsers.set(socket.id, userId);
-            socket.join(user.role.toLowerCase());
-            console.log(`User ${user.name} ID ${userId} connected with role ${user.role}`);
-        } else {
+            socket.join(user.role);
+
+            socket.emit('connect-socket-id', socket.id);
+            this.logger.debug(`User ${user.name} ID ${userId} connected with role ${user.role}`);
+
+        } catch (error) {
+            this.logger.error('Authentication failed:', error.message);
+            socket.emit('authentication-error', { message: 'Invalid token' });
             socket.disconnect();
-            console.log(`Connection rejected for user ${userId}`);
         }
     }
 
-    handleDisconnect(socket: Socket) {
-        const userId = socket.handshake.query.userId as string;
-        console.log('Disconnected:', socket.id);
-        console.log('DeskId(Disconnection):', userId);
-
+    handleDisconnect(socket: Socket) {        
+        const userId = this.connectedUsers.get(socket.id);
         if (userId) {
-            this.connectedUsers.delete(socket.id); // Remove user from the map
-            socket.leave(userId);
-            console.log(`User ${userId} disconnected`);
+            this.connectedUsers.delete(socket.id);
+            this.logger.debug(`User ${userId} disconnected`);
         }
     }
 
     emitToAllRoles(event: string, notification: Notification) {
-        const roles = ['dev', 'admin', 'comercial'];
+        const roles = [RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL];
         for (const role of roles) {
             this.server.to(role).emit(event, notification);
         }
