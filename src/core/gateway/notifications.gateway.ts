@@ -28,20 +28,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     }
 
     async onApplicationShutdown(signal?: string) {
-        this.logger.debug(`Application is shutting down... Signal: ${signal}`);
-
-        const roles = [RolesHelper.ADMIN, RolesHelper.DEV, RolesHelper.COMERCIAL];
-        
-        for (const role of roles) {
-            this.server.to(role).emit('disconnect-socket-id', { 
-                message: 'Server is shutting down', 
-                reason: 'server_shutdown',
-                timestamp: new Date().toISOString()
-            });
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
+        this.logger.debug(`Application is shutting down... Signal: ${signal}`);        
         this.server.disconnectSockets();        
         this.logger.debug('All users disconnected due to server shutdown');
     }
@@ -79,7 +66,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             socket.join(user.role);
 
             socket.emit('connect-socket-id', socket.id);
-            this.logger.debug(`User ${user.name} ID ${userId} connected with role ${user.role}`);
+            this.logger.debug(`User ${user.name} ID ${userId} connected with role ${user.role}. Socket ID: ${socket.id}`);
 
         } catch (error) {
             this.logger.error('Authentication failed:', error.message);
@@ -91,6 +78,13 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     handleDisconnect(socket: Socket) {        
         const userId = this.connectedUsers.get(socket.id);
         if (userId) {
+            socket.emit('disconnect-socket-id', {
+                message: 'User disconnected',
+                reason: 'server_shutdown',
+                timestamp: new Date().toISOString(),
+                socketId: socket.id
+            });
+            
             this.connectedUsers.delete(socket.id);
             this.logger.debug(`User ${userId} disconnected`);
         }
